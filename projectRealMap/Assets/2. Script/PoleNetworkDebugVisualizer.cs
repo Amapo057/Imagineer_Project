@@ -8,24 +8,24 @@ using UnityEditor;
 [ExecuteAlways]
 public class PoleNetworkDebugVisualizer : MonoBehaviour
 {
-    [Header("Ç¥½Ã ¼³Á¤")]
+    [Header("í‘œì‹œ ì„¤ì •")]
     public bool showNodePoints = true;
     public bool showConnections = true;
     public bool showIsolatedNodes = true;
     public bool showSelectedNodeConnections = true;
 
-    [Header("°Å¸® Ç¥½Ã")]
+    [Header("ê±°ë¦¬ í‘œì‹œ")]
     public bool showMaxConnectDistance = false;
     public float maxConnectDistance = 30f;
 
-    [Header("»ö»ó ¼³Á¤")]
+    [Header("ìƒ‰ìƒ ì„¤ì •")]
     public Color normalNodeColor = Color.yellow;
     public Color isolatedNodeColor = Color.red;
     public Color connectionColor = Color.green;
     public Color selectedConnectionColor = Color.cyan;
     public Color maxDistanceColor = new Color(1f, 1f, 1f, 0.15f);
 
-    [Header("Å©±â ¼³Á¤")]
+    [Header("í¬ê¸° ì„¤ì •")]
     public float nodeSphereSize = 0.25f;
     public float isolatedNodeSphereSize = 0.4f;
     public float selectedNodeSphereSize = 0.45f;

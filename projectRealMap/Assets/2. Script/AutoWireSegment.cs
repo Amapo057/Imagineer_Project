@@ -7,22 +7,22 @@ using Unity.Mathematics;
 [RequireComponent(typeof(LineRenderer))]
 public class AutoWireSegment : MonoBehaviour
 {
-    [Header("¿¬°á ½ÃÀÛ ³ëµå")]
+    [Header("ì—°ê²° ì‹œì‘ ë…¸ë“œ")]
     public PoleNode startNode;
 
-    [Header("¿¬°á ³¡ ³ëµå")]
+    [Header("ì—°ê²° ë ë…¸ë“œ")]
     public PoleNode endNode;
 
-    [Header("Àü¼± Ã³Áü Á¤µµ")]
+    [Header("ì „ì„  ì²˜ì§ ì •ë„")]
     public float wireSagAmount = 0.4f;
 
-    [Header("Àü¼± ½Ã°¢È­ ¼³Á¤")]
+    [Header("ì „ì„  ì‹œê°í™” ì„¤ì •")]
     public int visualPointCount = 16;
     public float wireWidth = 0.06f;
     public Color wireColor = new Color(0.05f, 0.05f, 0.05f, 1f);
     public Material wireMaterial;
 
-    [Header("ÀÚµ¿ °»½Å")]
+    [Header("ìë™ ê°±ì‹ ")]
     public bool updateEveryFrame = true;
 
     private SplineContainer splineContainer;
