@@ -1,2 +1,4 @@
+# Unity 에셋 관리를 위한 메타데이터 설정
 fileFormatVersion: 2
+# 프로젝트 내 에셋을 고유하게 구분하기 위한 GUID 값
 guid: a19c7a14546fcd74d9815e9a3afa1007
