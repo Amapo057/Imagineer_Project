@@ -2,26 +2,26 @@ using UnityEngine;
 
 public class BuildingPowerReceiver : MonoBehaviour, IElectricInteractable
 {
-    [Header("Àü±â °ø±Ş »óÅÂ")]
+    [Header("ì „ê¸° ê³µê¸‰ ìƒíƒœ")]
     [SerializeField] private bool isPowered = false;
 
-    [Header("°Ç¹° ¿ÜÇü")]
+    [Header("ê±´ë¬¼ ì™¸í˜•")]
     [SerializeField] private Renderer targetRenderer;
 
-    [Header("Àü±â °ø±Ş Àü »ö»ó")]
+    [Header("ì „ê¸° ê³µê¸‰ ì „ ìƒ‰ìƒ")]
     [SerializeField] private Color unpoweredColor = new Color(0.15f, 0.15f, 0.15f, 1f);
 
-    [Header("Àü±â °ø±Ş ÈÄ »ö»ó")]
+    [Header("ì „ê¸° ê³µê¸‰ í›„ ìƒ‰ìƒ")]
     [SerializeField] private Color poweredColor = new Color(1f, 0.85f, 0.25f, 1f);
 
-    [Header("°Ç¹° Á¶¸í")]
+    [Header("ê±´ë¬¼ ì¡°ëª…")]
     [SerializeField] private Light buildingLight;
 
-    [Header("»óÅÂ À¯Áö")]
-    [Tooltip("Ã¼Å©ÇÏ¸é ÇÑ ¹ø Àü±â°¡ µé¾î¿Â µÚ °è¼Ó ÄÑÁø »óÅÂ·Î À¯ÁöµË´Ï´Ù.")]
+    [Header("ìƒíƒœ ìœ ì§€")]
+    [Tooltip("ì²´í¬í•˜ë©´ í•œ ë²ˆ ì „ê¸°ê°€ ë“¤ì–´ì˜¨ ë’¤ ê³„ì† ì¼œì§„ ìƒíƒœë¡œ ìœ ì§€ë©ë‹ˆë‹¤.")]
     [SerializeField] private bool keepPoweredState = true;
 
-    [Header("µğ¹ö±×")]
+    [Header("ë””ë²„ê·¸")]
     [SerializeField] private bool showDebugLog = true;
 
     public bool IsPowered => isPowered;
@@ -58,7 +58,7 @@ public class BuildingPowerReceiver : MonoBehaviour, IElectricInteractable
         {
             if (showDebugLog)
             {
-                Debug.Log("[Building Power] ÀÌ¹Ì Àü±â°¡ ÄÑÁø °Ç¹°ÀÔ´Ï´Ù: " + gameObject.name);
+                Debug.Log("[Building Power] ì´ë¯¸ ì „ê¸°ê°€ ì¼œì§„ ê±´ë¬¼ì…ë‹ˆë‹¤: " + gameObject.name);
             }
 
             return;
@@ -69,7 +69,7 @@ public class BuildingPowerReceiver : MonoBehaviour, IElectricInteractable
 
         if (showDebugLog)
         {
-            Debug.Log("[Building Power] °Ç¹° Àü±â °ø±Ş ¿Ï·á: " + gameObject.name);
+            Debug.Log("[Building Power] ê±´ë¬¼ ì „ê¸° ê³µê¸‰ ì™„ë£Œ: " + gameObject.name);
         }
     }
 
@@ -85,7 +85,7 @@ public class BuildingPowerReceiver : MonoBehaviour, IElectricInteractable
 
         if (showDebugLog)
         {
-            Debug.Log("[Building Power] °Ç¹° Àü±â °ø±Ş ÇØÁ¦: " + gameObject.name);
+            Debug.Log("[Building Power] ê±´ë¬¼ ì „ê¸° ê³µê¸‰ í•´ì œ: " + gameObject.name);
         }
     }
 
