@@ -3,7 +3,32 @@ guid: a625b978fe6035d4f818f59269990329
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: BuildingWindow
+    second: {fileID: 2100000, guid: 676d8c5bf0dcf664599e236f6741c404, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: RedBrick
+    second: {fileID: 2100000, guid: c3bde3218c8966e4d99e4cb925b59e74, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: brwon pipe
+    second: {fileID: 2100000, guid: 764303418a1ade842a46c84edd43fa87, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: gavel_Concrete
+    second: {fileID: 2100000, guid: 93fa3056eff446941bd497c719c93d6c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: red pipe
+    second: {fileID: 2100000, guid: c3bde3218c8966e4d99e4cb925b59e74, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

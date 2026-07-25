@@ -420,167 +420,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &809398832
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 809398834}
-  - component: {fileID: 809398835}
-  - component: {fileID: 809398836}
-  m_Layer: 0
-  m_Name: CityGenerator
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &809398834
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 809398832}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &809398835
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 809398832}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e20ab7e4265dfeb4b91f0f534561e6c3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BuildingDataLoader
---- !u!114 &809398836
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 809398832}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3411c1c2d36ab8342bfdcc6e1f9408ae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProceduralBuildingGenerator
-  buildingStylesList:
-  - styleName: Red Brick House Base
-    buildingType: 0
-    roofMaterial: {fileID: 2100000, guid: 0d08f7dc79e28fc468f4969232e13911, type: 2}
-    roofUVScale: 0.3
-    baseHeight: 0.3
-    trimHeight: 0.1
-    baseRowIndex: 2
-    wallRowIndex: 0
-    trimRowIndex: 2
-    doorPrefab:
-    - {fileID: 138730543297155978, guid: b071c78c8a3ddde4da91dd39dccd3231, type: 3}
-    windowPrefab:
-    - {fileID: 6989742838435793099, guid: 02e00083a92360b4fa4dd0179a1a1208, type: 3}
-    otherPrefab:
-    - {fileID: 6131360070446791102, guid: fc86a06bb8994b447b2a018cd7d9fab4, type: 3}
-    windowSpacing: 5
-    windowSpawnChance: 0.8
-    startingWindowFloor: 0
-    parapetHeight: 0.5
-    parapetRowIndex: 2
-  - styleName: Apartment
-    buildingType: 1
-    roofMaterial: {fileID: 2100000, guid: cc2149228341bc944a05ee60b8c7f2cb, type: 2}
-    roofUVScale: 0.3
-    baseHeight: 0
-    trimHeight: 0
-    baseRowIndex: 0
-    wallRowIndex: 2
-    trimRowIndex: 0
-    doorPrefab:
-    - {fileID: 6615090197095576296, guid: bfe48399a634b944ca557d38bcd4e754, type: 3}
-    windowPrefab:
-    - {fileID: 8747836389318441740, guid: 6860c6b048efc2b48bf72040066f787e, type: 3}
-    otherPrefab:
-    - {fileID: 6131360070446791102, guid: fc86a06bb8994b447b2a018cd7d9fab4, type: 3}
-    windowSpacing: 7
-    windowSpawnChance: 1
-    startingWindowFloor: 0
-    parapetHeight: 0
-    parapetRowIndex: 0
-  - styleName: Commercial
-    buildingType: 2
-    roofMaterial: {fileID: 2100000, guid: cc2149228341bc944a05ee60b8c7f2cb, type: 2}
-    roofUVScale: 0.3
-    baseHeight: 0.1
-    trimHeight: 0
-    baseRowIndex: 4
-    wallRowIndex: 2
-    trimRowIndex: 0
-    doorPrefab:
-    - {fileID: 6615090197095576296, guid: bfe48399a634b944ca557d38bcd4e754, type: 3}
-    windowPrefab:
-    - {fileID: 3075203669310887419, guid: d960fab7ca99f7a48b902beb09296b13, type: 3}
-    otherPrefab:
-    - {fileID: 6131360070446791102, guid: fc86a06bb8994b447b2a018cd7d9fab4, type: 3}
-    windowSpacing: 2.2
-    windowSpawnChance: 1
-    startingWindowFloor: 1
-    parapetHeight: 0.5
-    parapetRowIndex: 2
-  - styleName: Office
-    buildingType: 3
-    roofMaterial: {fileID: 2100000, guid: cc2149228341bc944a05ee60b8c7f2cb, type: 2}
-    roofUVScale: 0.3
-    baseHeight: 0.7
-    trimHeight: 0
-    baseRowIndex: 4
-    wallRowIndex: 5
-    trimRowIndex: 0
-    doorPrefab:
-    - {fileID: 6615090197095576296, guid: bfe48399a634b944ca557d38bcd4e754, type: 3}
-    windowPrefab:
-    - {fileID: 3075203669310887419, guid: d960fab7ca99f7a48b902beb09296b13, type: 3}
-    otherPrefab:
-    - {fileID: 6131360070446791102, guid: fc86a06bb8994b447b2a018cd7d9fab4, type: 3}
-    windowSpacing: 2
-    windowSpawnChance: 0
-    startingWindowFloor: 1
-    parapetHeight: 0.5
-    parapetRowIndex: 4
-  - styleName: Etc
-    buildingType: 4
-    roofMaterial: {fileID: 2100000, guid: 0d08f7dc79e28fc468f4969232e13911, type: 2}
-    roofUVScale: 0.3
-    baseHeight: 0.3
-    trimHeight: 0.2
-    baseRowIndex: 2
-    wallRowIndex: 3
-    trimRowIndex: 4
-    doorPrefab:
-    - {fileID: 6615090197095576296, guid: bfe48399a634b944ca557d38bcd4e754, type: 3}
-    windowPrefab:
-    - {fileID: 3075203669310887419, guid: a61be6937a2d4e243b36a851d32727ee, type: 3}
-    otherPrefab:
-    - {fileID: 6131360070446791102, guid: fc86a06bb8994b447b2a018cd7d9fab4, type: 3}
-    windowSpacing: 3
-    windowSpawnChance: 0.8
-    startingWindowFloor: 1
-    parapetHeight: 0.5
-    parapetRowIndex: 3
-  fileName: 1. Assets/preprocessing.json
-  jsonPaser: {fileID: 809398835}
-  buildingMaterial: {fileID: 2100000, guid: 143858c8ce84d4a40a115d813c8ccdd6, type: 2}
 --- !u!1 &841026221
 GameObject:
   m_ObjectHideFlags: 0
@@ -1232,13 +1071,70 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bef79fff6b28fce43a94e7c94c5cc97c, type: 3}
+--- !u!1001 &6589958787596901889
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 693475120779342389, guid: 9fb8da3c367dc7a43a68cd3fd24e0639, type: 3}
+      propertyPath: m_Name
+      value: CityGenerator
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680886050487884377, guid: 9fb8da3c367dc7a43a68cd3fd24e0639, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680886050487884377, guid: 9fb8da3c367dc7a43a68cd3fd24e0639, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680886050487884377, guid: 9fb8da3c367dc7a43a68cd3fd24e0639, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680886050487884377, guid: 9fb8da3c367dc7a43a68cd3fd24e0639, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680886050487884377, guid: 9fb8da3c367dc7a43a68cd3fd24e0639, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680886050487884377, guid: 9fb8da3c367dc7a43a68cd3fd24e0639, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680886050487884377, guid: 9fb8da3c367dc7a43a68cd3fd24e0639, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680886050487884377, guid: 9fb8da3c367dc7a43a68cd3fd24e0639, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680886050487884377, guid: 9fb8da3c367dc7a43a68cd3fd24e0639, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680886050487884377, guid: 9fb8da3c367dc7a43a68cd3fd24e0639, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 9fb8da3c367dc7a43a68cd3fd24e0639, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 458084010}
   - {fileID: 841026225}
-  - {fileID: 809398834}
+  - {fileID: 6589958787596901889}
   - {fileID: 1953893760}
   - {fileID: 529129379}
   - {fileID: 769583773}
