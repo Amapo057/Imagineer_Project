@@ -3,7 +3,8 @@ using UnityEngine;
 
 public class BuildingController : MonoBehaviour
 {
-    private List<MeshRenderer> rendererList = new List<MeshRenderer>();
+    // 에디터에서 미리 생성한 건물도 참조를 유지하도록 직렬화
+    [SerializeField] private List<MeshRenderer> rendererList = new List<MeshRenderer>();
 
     private readonly string emissionController = "_EmissionIntensity";
 

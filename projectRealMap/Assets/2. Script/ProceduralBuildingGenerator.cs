@@ -97,7 +97,8 @@ public class ProceduralBuildingGenerator : MonoBehaviour
     private Vector2[] RowVRange = new Vector2[7];
 // }
 // /*
-    public void Start()
+    // 에디터에서 미리 생성할 때도 필요하기에 Start에서 분리
+    private void InitRowVRange()
     {
         // 트림 시트 uv 계산
         for (int i = 0; i < 7; i++)
@@ -110,6 +111,15 @@ public class ProceduralBuildingGenerator : MonoBehaviour
             // 좌표를 최대 높이로 나눠 UV에 사용하는 0.0~1.0 사이의 좌표로 변환
             RowVRange[i] = new Vector2(vMin / TOTAL_TEX_HEIGHT, vMax / TOTAL_TEX_HEIGHT);
         }
+    }
+
+    public void Start()
+    {
+        // 에디터에서 미리 구워둔 건물이 있으면 중복 생성하지 않고 그대로 사용
+        if (transform.childCount > 0) return;
+
+        InitRowVRange();
+
         // paser코드에서 함수 호출해 json 구조체로 변환
         List<BuildingData> buildingList = jsonPaser.LoadAndParseJson<BuildingData>(fileName);
 
@@ -161,11 +171,42 @@ public class ProceduralBuildingGenerator : MonoBehaviour
         List<int> wallTriangles = new List<int>();
         // 옥상 삼각형 순서 저장
         List<int> roofTriangles = new List<int>();
+        // 창문 삼각형 순서 저장
+        List<int> windowTriangles = new List<int>();
 
         // 모서리 갯수 계산
         int cornerCount = buildingData.vertices.Count;
         // 넘겨받은 인덱스로 현재 스타일 파악
         BuildingStyle style = buildingStylesList[currentStyle];
+
+        // 실제 건물처럼 창문이 통일되어 보이도록 건물 하나당 창문 종류를 하나로 고정
+        // 프리팹을 그대로 Instantiate하면 건물마다 수십개의 오브젝트가 생기므로
+        // 메쉬 정보만 뽑아두고 나중에 건물 메쉬에 합쳐서 사용
+        Mesh windowMesh = null;
+        Material windowMat = null;
+        // 프리팹 내부의 위치/회전/스케일 보정값 (자식에 메쉬가 있거나 스케일이 조정된 경우 대비)
+        Matrix4x4 windowLocal = Matrix4x4.identity;
+        // 창문을 어디에 몇 개 배치할지 모아두는 목록
+        List<CombineInstance> windowInstances = new List<CombineInstance>();
+
+        if (style.windowPrefab != null && style.windowPrefab.Count > 0)
+        {
+            GameObject buildingWindow = style.windowPrefab[Random.Range(0, style.windowPrefab.Count)];
+
+            MeshFilter windowFilter = buildingWindow.GetComponentInChildren<MeshFilter>();
+            MeshRenderer windowRenderer = buildingWindow.GetComponentInChildren<MeshRenderer>();
+
+            if (windowFilter != null)
+            {
+                windowMesh = windowFilter.sharedMesh;
+                // 프리팹 루트 기준으로 메쉬가 얼마나 떨어져 있는지 계산
+                windowLocal = buildingWindow.transform.worldToLocalMatrix * windowFilter.transform.localToWorldMatrix;
+            }
+            if (windowRenderer != null)
+            {
+                windowMat = windowRenderer.sharedMaterial;
+            }
+        }
 
         // --- [뼈대 외벽 메쉬 생성 및 프랍 배치 스캔] ---
         for (int i = 0; i < cornerCount; i++)
@@ -258,7 +299,7 @@ public class ProceduralBuildingGenerator : MonoBehaviour
             }
             if (style.windowSpawnChance > 0)
             {
-                PlaceWindowsOnWall(buildingData, style, buildingObj, p1, p2, wallNormal, wallRotation);
+                PlaceWindowsOnWall(buildingData, style, windowMesh, windowLocal, windowInstances, p1, p2, wallNormal, wallRotation);
             }
             
         }
@@ -291,16 +332,50 @@ public class ProceduralBuildingGenerator : MonoBehaviour
             roofTriangles.Add(roofVIndexStart + index1);
         }
 
+        // --- [모아둔 창문들을 하나의 메쉬로 합쳐 건물 메쉬에 편입] ---
+        if (windowInstances.Count > 0 && windowMesh != null)
+        {
+            Mesh combinedWindows = new Mesh();
+            // 창문이 많으면 기본 한계인 65535개를 넘길 수 있으므로 확장
+            combinedWindows.indexFormat = IndexFormat.UInt32;
+            // 두번째 인자를 true로 줘 서브메쉬 없이 하나로 합침
+            combinedWindows.CombineMeshes(windowInstances.ToArray(), true, true);
+
+            // 기존 벽/옥상 버텍스 뒤에 이어붙이기 위해 시작 위치 기억
+            int windowVIndexStart = vertices.Count;
+            vertices.AddRange(combinedWindows.vertices);
+
+            // uv 개수가 버텍스 수와 다르면 뒤쪽 데이터가 전부 밀리므로 길이를 맞춰줌
+            Vector2[] windowUVs = combinedWindows.uv;
+            for (int i = 0; i < combinedWindows.vertexCount; i++)
+            {
+                uvs.Add(i < windowUVs.Length ? windowUVs[i] : Vector2.zero);
+            }
+
+            // 이어붙인 만큼 삼각형 순서를 밀어서 저장
+            int[] combinedTriangles = combinedWindows.triangles;
+            for (int i = 0; i < combinedTriangles.Length; i++)
+            {
+                windowTriangles.Add(windowVIndexStart + combinedTriangles[i]);
+            }
+
+            // 합치는 용도로만 쓴 임시 메쉬라 정리
+            DestroyImmediate(combinedWindows);
+        }
+
         // 메시 생성
         Mesh mesh = new Mesh();
+        // 창문까지 더해지면 버텍스가 많아지므로 버텍스 등록 전에 확장
+        mesh.indexFormat = IndexFormat.UInt32;
         mesh.vertices = vertices.ToArray();
         mesh.uv = uvs.ToArray();
-        // 천장과 벽을 구분하기 위해 서브메쉬 2개로 분리
-        mesh.subMeshCount = 2;
+        // 천장과 벽, 창문을 구분하기 위해 서브메쉬 3개로 분리
+        mesh.subMeshCount = 3;
 
         // 들어있는 버텍스들을 triangles에 들어있는 순서를 이용해 삼각형으로 조립
         mesh.SetTriangles(wallTriangles.ToArray(), 0);
         mesh.SetTriangles(roofTriangles.ToArray(), 1);
+        mesh.SetTriangles(windowTriangles.ToArray(), 2);
         // 건물의 크기를 계산에 화면 밖에 나갔을 경우 사라질 수 있도록 준비
         mesh.RecalculateBounds();
         mesh.RecalculateTangents();
@@ -313,11 +388,13 @@ public class ProceduralBuildingGenerator : MonoBehaviour
         if (meshRenderer != null)
         {
             // 마테리얼 담기위한 리스트 생성
-            Material[] buildingMaterials = new Material[2];
+            Material[] buildingMaterials = new Material[3];
             buildingMaterials[0] = buildingMaterial;
             buildingMaterials[1] = style.roofMaterial;
+            buildingMaterials[2] = windowMat;
 
-            meshRenderer.materials = buildingMaterials;
+            // 에디터에서 생성할 때 materials를 쓰면 마테리얼이 복제되어 누수되므로 shared 사용
+            meshRenderer.sharedMaterials = buildingMaterials;
 
             MaterialPropertyBlock propBlock = new MaterialPropertyBlock();
             meshRenderer.GetPropertyBlock(propBlock);
@@ -339,7 +416,8 @@ public class ProceduralBuildingGenerator : MonoBehaviour
             MeshCollider meshCollider = buildingObj.AddComponent<MeshCollider>();
             meshCollider.sharedMesh = mesh;
         }
-        meshFilter.mesh = mesh;
+        // 에디터에서 mesh를 쓰면 메쉬가 복제되어 누수되므로 sharedMesh 사용
+        meshFilter.sharedMesh = mesh;
     }
 
     // 현재 Y높이, 목표 Y 높이, 마테리얼 X비율, 첫번째 점, 두번째 점, 사용할 uv 범위, 꼭지점 리스트, uv리스트, 삼각형 생성 순서
@@ -372,14 +450,17 @@ public class ProceduralBuildingGenerator : MonoBehaviour
     private void PlaceWindowsOnWall(
     BuildingData buildingData,
     BuildingStyle style,
-    GameObject buildingObj,
+    Mesh windowMesh,
+    Matrix4x4 windowLocal,
+    List<CombineInstance> windowInstances,
     Vector3 p1,
     Vector3 p2,
     Vector3 wallNormal,
     Quaternion wallRotation
     )
     {
-        if (style.windowPrefab == null || style.windowPrefab.Count == 0)
+        // 건물 단위로 미리 정해진 창문이 없으면 생략
+        if (windowMesh == null)
             return;
 
         float wallWidth = Vector3.Distance(p1, p2);
@@ -417,21 +498,66 @@ public class ProceduralBuildingGenerator : MonoBehaviour
                 // z-fighting 방지: 벽 바깥쪽으로 살짝 띄움
                 pos += wallNormal * 0.05f;
 
-                GameObject chosenWindow = style.windowPrefab[
-                    Random.Range(0, style.windowPrefab.Count)
-                ];
+                // 오브젝트를 만들지 않고 배치 정보만 기록
+                // 나중에 건물 메쉬와 한번에 합쳐지므로 창문 하나당 오브젝트가 생기지 않음
+                CombineInstance windowInstance = new CombineInstance();
+                windowInstance.mesh = windowMesh;
+                // 프리팹 내부 보정값을 먼저 적용한 뒤 벽면 위치/회전을 적용
+                windowInstance.transform = Matrix4x4.TRS(pos, wallRotation, Vector3.one) * windowLocal;
 
-                GameObject windowInstance = Instantiate(
-                    chosenWindow,
-                    pos,
-                    wallRotation,
-                    buildingObj.transform
-                );
-
-                // 필요하면 스케일 랜덤화
-                // windowInstance.transform.localScale *= Random.Range(0.9f, 1.1f);
+                windowInstances.Add(windowInstance);
             }
         }
     }
+
+#if UNITY_EDITOR
+    // --- [에디터 전용: 플레이를 종료해도 남는 실제 오브젝트로 생성] ---
+    // 컴포넌트 이름을 우클릭하면 메뉴에 나타남
+
+    [ContextMenu("건물 생성")]
+    public void GenerateInEditor()
+    {
+        // 이전에 만들어 둔 건물이 있으면 먼저 정리
+        ClearBuildings();
+
+        // Start를 거치지 않으므로 UV 계산을 직접 호출
+        InitRowVRange();
+
+        List<BuildingData> buildingList = jsonPaser.LoadAndParseJson<BuildingData>(fileName);
+        if (buildingList == null)
+        {
+            Debug.LogError("json을 불러오지 못했습니다. fileName을 확인해주세요.");
+            return;
+        }
+
+        for (int i = 0; i < buildingList.Count; i++)
+        {
+            int styleNumber = 0;
+            if (System.Enum.TryParse<BuildingType>(buildingList[i].type, true, out BuildingType buildingType))
+            {
+                styleNumber = (int)buildingType;
+                if (styleNumber > 4) { styleNumber = 4; }
+            }
+            CreateSingleBuilding(buildingList[i], i, styleNumber);
+        }
+
+        Debug.Log($"건물 {buildingList.Count}개 생성 완료. 씬을 저장해야 유지됩니다.");
+
+        // 씬이 변경되었음을 알려야 저장이 가능해짐
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+    }
+
+    [ContextMenu("건물 전체 삭제")]
+    public void ClearBuildings()
+    {
+        // 순회 중 자식이 사라지므로 뒤에서부터 제거
+        for (int i = transform.childCount - 1; i >= 0; i--)
+        {
+            DestroyImmediate(transform.GetChild(i).gameObject);
+        }
+
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+    }
+#endif
 }
 // */
