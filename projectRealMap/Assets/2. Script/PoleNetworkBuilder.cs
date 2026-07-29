@@ -13,6 +13,9 @@ public class PoleNetworkBuilder : MonoBehaviour
     [Tooltip("이 거리 안에 있는 전봇대만 연결 후보로 봅니다.")]
     public float maxConnectDistance = 30f;
 
+    [Tooltip("이 거리보다 가까운 전봇대끼리는 연결하지 않습니다. 0이면 제한이 없습니다.")]
+    public float minConnectDistance = 0f;
+
     [Tooltip("방향별 후보로 인정할 각도 기준입니다. 값이 높을수록 정면에 가까운 노드만 선택합니다.")]
     [Range(0f, 1f)]
     public float directionDotThreshold = 0.45f;
@@ -53,6 +56,40 @@ public class PoleNetworkBuilder : MonoBehaviour
 
     [Tooltip("전봇대 위치가 바뀌면 전선도 자동으로 따라가게 합니다.")]
     public bool updateWireEveryFrame = true;
+
+    [Header("장식 전선 (이동에는 사용되지 않음)")]
+    [Tooltip("이동용 전선 양옆에 보기용 전선을 메쉬로 생성합니다.")]
+    public bool createDecorativeWires = true;
+
+    [Tooltip("각 전선 위치마다 만들 가닥 목록입니다. 가운데는 이동용 전선이 차지하므로 비워둡니다.")]
+    public List<DecorativeStrand> decorativeStrands = new List<DecorativeStrand>
+    {
+        new DecorativeStrand
+        {
+            strandName = "Left",
+            startLateralOffset = -0.6f,
+            endLateralOffset = -0.6f,
+            sagAmount = 0.5f
+        },
+        new DecorativeStrand
+        {
+            strandName = "Right",
+            startLateralOffset = 0.6f,
+            endLateralOffset = 0.6f,
+            sagAmount = 0.5f
+        }
+    };
+
+    [Range(2, 64)]
+    public int decorativeSegmentCount = 12;
+
+    [Range(3, 12)]
+    public int decorativeSideCount = 4;
+
+    public float decorativeWireRadius = 0.03f;
+
+    [Tooltip("장식 전선에 사용할 머티리얼입니다. 비워두면 기본 머티리얼을 자동으로 만듭니다.")]
+    public Material decorativeWireMaterial;
 
     [Header("선 꼬임 방지")]
     [Tooltip("새 전선이 기존 전선과 XZ 평면에서 교차하면 생성하지 않습니다.")]
@@ -151,11 +188,49 @@ public class PoleNetworkBuilder : MonoBehaviour
             }
         }
 
+#if UNITY_EDITOR
+        // 에디터에서 만든 연결이 씬에 저장되도록 변경 사항을 기록한다
+        SaveNodeChangesInEditor(nodes);
+#endif
+
         if (showDebugLog)
         {
             Debug.Log("자동 연결 완료 / 생성된 전선 수: " + createdPairs.Count);
         }
     }
+
+#if UNITY_EDITOR
+    // 스크립트로 바꾼 값은 자동으로 저장되지 않는다.
+    // 특히 프리팹 인스턴스는 "원본 + 오버라이드" 형태로 저장되는데,
+    // RecordPrefabInstancePropertyModifications를 호출하지 않으면
+    // 바뀐 connections가 오버라이드로 등록되지 않아 씬 저장 시 사라진다.
+    private void SaveNodeChangesInEditor(PoleNode[] nodes)
+    {
+        if (Application.isPlaying)
+        {
+            return;
+        }
+
+        foreach (PoleNode node in nodes)
+        {
+            if (node == null)
+            {
+                continue;
+            }
+
+            // 프리팹 인스턴스면 달라진 값을 오버라이드로 기록한다
+            if (UnityEditor.PrefabUtility.IsPartOfPrefabInstance(node))
+            {
+                UnityEditor.PrefabUtility.RecordPrefabInstancePropertyModifications(node);
+            }
+
+            UnityEditor.EditorUtility.SetDirty(node);
+        }
+
+        // 씬이 변경되었음을 알려야 저장이 가능해진다
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+    }
+#endif
 
     private void ClearAllNodeConnections(PoleNode[] nodes)
     {
@@ -298,6 +373,17 @@ public class PoleNetworkBuilder : MonoBehaviour
             return false;
         }
 
+        // 너무 가까이 붙은 전봇대끼리 전선이 생기는 것을 막는다
+        if (minConnectDistance > 0f && distance < minConnectDistance)
+        {
+            if (showDebugLog)
+            {
+                Debug.Log("최소 거리 미달로 후보 제외: " + origin.name + " - " + candidate.name + " / 거리: " + distance);
+            }
+
+            return false;
+        }
+
         if (!allowDiagonalConnections)
         {
             if (!IsAxisAlignedEnough(toCandidate.normalized))
@@ -408,7 +494,35 @@ public class PoleNetworkBuilder : MonoBehaviour
             wireMaterial
         );
 
+        // 장식 전선은 LineRenderer와 같은 오브젝트에 둘 수 없어 자식으로 분리한다
+        // (한 오브젝트에 Renderer는 하나만 붙일 수 있음)
+        if (createDecorativeWires)
+        {
+            CreateDecorativeWire(startNode, endNode, wireObject.transform);
+        }
+
         return splineContainer;
+    }
+
+    private void CreateDecorativeWire(PoleNode startNode, PoleNode endNode, Transform wireTransform)
+    {
+        GameObject decorativeObject = new GameObject("DecorativeStrands");
+        decorativeObject.transform.SetParent(wireTransform);
+        decorativeObject.transform.localPosition = Vector3.zero;
+        decorativeObject.transform.localRotation = Quaternion.identity;
+        decorativeObject.transform.localScale = Vector3.one;
+
+        DecorativeWireSegment decorativeWire = decorativeObject.AddComponent<DecorativeWireSegment>();
+
+        decorativeWire.Initialize(
+            startNode,
+            endNode,
+            decorativeStrands,
+            decorativeSegmentCount,
+            decorativeSideCount,
+            decorativeWireRadius,
+            decorativeWireMaterial
+        );
     }
 
     private bool DoesNewConnectionCrossExisting(PoleNode newA, PoleNode newB)

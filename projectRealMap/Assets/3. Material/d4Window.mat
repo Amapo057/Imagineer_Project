@@ -46,7 +46,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Emission_Map:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 45a75906a7237e44ca0e84028811bb6e, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Normal_Map:
@@ -67,6 +67,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Alapha_Clip_Threshold: 0
     - _EmissionIntensity: 0
     - _Emission_Intensity: 0
     - _QueueControl: 0

@@ -38,19 +38,19 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _ARM_Map:
-        m_Texture: {fileID: 2800000, guid: f3a1f6dc9ea422c47a9fccbe0769efc4, type: 3}
+        m_Texture: {fileID: 2800000, guid: 93fcf2b99cb27a74e85137c87621467b, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Diff_Map:
-        m_Texture: {fileID: 2800000, guid: 168acc27a2fc4334880905d5431e9403, type: 3}
+        m_Texture: {fileID: 2800000, guid: c3fb5fff553e21245ae678572b191e53, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Emission_Map:
-        m_Texture: {fileID: 2800000, guid: bf8575baf2910764684e954673c0596e, type: 3}
+        m_Texture: {fileID: 2800000, guid: b30de48dd5db01641983c26fb0221a01, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Normal_Map:
-        m_Texture: {fileID: 2800000, guid: 5cda3e4421f792f459ca2e9b54a80277, type: 3}
+        m_Texture: {fileID: 2800000, guid: fe135fa07923cf94eaa86e80aae60a42, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - unity_Lightmaps:
