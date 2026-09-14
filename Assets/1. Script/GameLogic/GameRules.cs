@@ -13,10 +13,10 @@ public static class GameRules
     // 명치를 이 횟수만큼 맞으면 패배
     public const int FaceHitThreshold = 10;
 
-    // 코스트는 매 턴 이만큼씩 늘어나고, 최대치까지만 차오름
-    public const int CostPerTurn = 1;
+    // 코스트는 자기 턴 하나 지날 때마다 1씩 늘어나고, 최대치까지만 차오름
     public const int MaxCost = 8;
 
-    // 후공 코스트 보정
-    public const int SecondPlayerBonusCost = 2;
+    // 후공은 첫 턴부터 이 코스트로 시작하고, 두 번째 턴까지는 그대로 유지됨
+    // (세 번째 턴부터는 선공과 같은 속도로 1씩 증가)
+    public const int SecondPlayerStartingCost = 2;
 }

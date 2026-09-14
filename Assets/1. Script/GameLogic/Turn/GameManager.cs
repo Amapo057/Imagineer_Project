@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 /// <summary>
 /// GameStateManager(턴/페이즈 진행)와 GameBoardState(보드 상태)를 실제로 이어붙이는 총괄 매니저.
@@ -26,12 +27,21 @@ public class GameManager
         State.OnTurnChanged += _ => turnNumber++;
     }
 
-    // 게임 시작. firstPlayer가 선공
-    public void StartGame(PlayerSide firstPlayer)
+    // 게임 시작. firstPlayer를 안 정해주면 50%로 랜덤하게 선공을 정함
+    public void StartGame(PlayerSide? firstPlayer = null)
     {
         isGameOver = false;
         turnNumber = 1;
-        State.StartGame(firstPlayer);
+
+        PlayerSide starter = firstPlayer ?? (UnityEngine.Random.value < 0.5f ? PlayerSide.Me : PlayerSide.Opponent);
+        PlayerSide second = starter == PlayerSide.Me ? PlayerSide.Opponent : PlayerSide.Me;
+
+        Board.GetBoard(starter).isSecondPlayer = false;
+        Board.GetBoard(starter).ownTurnCount = 0;
+        Board.GetBoard(second).isSecondPlayer = true;
+        Board.GetBoard(second).ownTurnCount = 0;
+
+        State.StartGame(starter);
     }
 
     private void HandlePhaseEnter(TurnPhase phase)
@@ -54,7 +64,16 @@ public class GameManager
     {
         var board = Board.GetBoard(State.CurrentPlayer);
 
-        board.maxCost = Math.Min(board.maxCost + GameRules.CostPerTurn, GameRules.MaxCost);
+        board.ownTurnCount++;
+
+        // 선공: 본인 턴 횟수 = 코스트 (1, 2, 3, ...)
+        // 후공: 첫 턴부터 SecondPlayerStartingCost(2)로 시작해서 두 번째 턴까지 그대로 유지,
+        //       세 번째 턴부터는 선공과 같은 속도(1씩)로 증가
+        int baseCost = board.isSecondPlayer
+            ? Math.Max(board.ownTurnCount, GameRules.SecondPlayerStartingCost)
+            : board.ownTurnCount;
+
+        board.maxCost = Math.Min(baseCost, GameRules.MaxCost);
         board.currentCost = board.maxCost;
 
         foreach (var card in board.lanes)

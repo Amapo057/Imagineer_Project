@@ -13,7 +13,9 @@ using UnityEngine;
 /// 사용법: 유니티 상단 메뉴 CardGame > CSV로 카드 데이터 가져오기
 ///
 /// CSV 형식 (첫 줄은 헤더, 헤더 이름은 그대로 유지):
-/// cardId,cardName,cost,attack,health,keywords,description
+/// cardId,cardName,cost,attack,health,cardType,keywords,description
+///
+/// cardType 칸은 Unit 또는 Spell (한글 "유닛"/"마법"도 인식됨). 비어있으면 Unit으로 처리.
 ///
 /// keywords 칸은 세미콜론(;)으로 여러 개 구분. 한글/영문 둘 다 인식됨:
 /// 반격/Counter, 회복/Heal, 전투의함성/Battlecry, 드로우/Draw, 자폭/SelfDestruct, 휘둘기/Cleave
@@ -65,6 +67,7 @@ public static class CardCsvImporter
         int idxCost = Array.IndexOf(header, "cost");
         int idxAtk = Array.IndexOf(header, "attack");
         int idxHp = Array.IndexOf(header, "health");
+        int idxType = Array.IndexOf(header, "cardType");
         int idxKeywords = Array.IndexOf(header, "keywords");
         int idxDesc = Array.IndexOf(header, "description");
 
@@ -109,6 +112,7 @@ public static class CardCsvImporter
 
             card.cardId = cardId;
             card.cardName = cardName;
+            card.cardType = idxType >= 0 ? ParseCardType(row, idxType) : CardType.Unit;
             card.cost = ParseIntSafe(row, idxCost);
             card.attack = ParseIntSafe(row, idxAtk);
             card.health = ParseIntSafe(row, idxHp);
@@ -131,6 +135,18 @@ public static class CardCsvImporter
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log($"[CardCsvImporter] 완료 — 새로 생성 {created}장, 기존 갱신 {updated}장 (cardClass / hologramPrefab은 건드리지 않음)");
+    }
+
+    private static CardType ParseCardType(string[] row, int idx)
+    {
+        if (idx >= row.Length || string.IsNullOrWhiteSpace(row[idx])) return CardType.Unit;
+
+        string key = row[idx].Trim();
+        if (key.Equals("spell", StringComparison.OrdinalIgnoreCase) || key == "마법") return CardType.Spell;
+        if (key.Equals("unit", StringComparison.OrdinalIgnoreCase) || key == "유닛") return CardType.Unit;
+
+        Debug.LogWarning($"[CardCsvImporter] 인식하지 못한 cardType: \"{key}\" — Unit으로 처리");
+        return CardType.Unit;
     }
 
     private static int ParseIntSafe(string[] row, int idx)

@@ -9,6 +9,12 @@ public class PlayerBoardState
 {
     public PlayerSide side;
 
+    // 후공인지 여부. 코스트 시작 속도가 다름 (GameRules.SecondPlayerStartingCost 참고)
+    public bool isSecondPlayer;
+
+    // 이 플레이어 본인 턴이 지금까지 몇 번째인지 (코스트 계산에 사용)
+    public int ownTurnCount;
+
     // 필드 4라인. 인덱스 0~3, 비어있으면 null.
     // 소환 시 위치가 고정되고 이후 재배치는 안 됨
     public CardInstance[] lanes = new CardInstance[4];
@@ -44,5 +50,24 @@ public class PlayerBoardState
 
         lanes[laneIndex] = card;
         return true;
+    }
+
+    // 명치를 한 대 맞음 (전투 페이즈에서 방어할 카드가 없을 때 호출됨)
+    public void TakeFaceHit()
+    {
+        faceHitCount++;
+    }
+
+    // 명치를 GameRules.FaceHitThreshold번 맞으면 패배
+    public bool IsDefeated => faceHitCount >= GameRules.FaceHitThreshold;
+
+    // 체력이 0 이하인 카드를 필드에서 치움 (전투 페이즈가 끝날 때 호출됨)
+    public void RemoveDeadCards()
+    {
+        for (int i = 0; i < lanes.Length; i++)
+        {
+            if (lanes[i] != null && !lanes[i].IsAlive) lanes[i] = null;
+        }
+        if (spellSlot != null && !spellSlot.IsAlive) spellSlot = null;
     }
 }

@@ -14,6 +14,13 @@ public enum CardKeyword
     Cleave       = 1 << 5, // 휘둘기
 }
 
+// 카드 종류. 유닛은 4라인에, 마법은 별도의 spellSlot에 놓임 (PlayerBoardState 참고)
+public enum CardType
+{
+    Unit,
+    Spell,
+}
+
 /// <summary>
 /// 카드 한 장의 데이터. 실제 게임에 등장하는 카드마다 이 타입으로
 /// 에셋(.asset) 하나씩을 만들어서 사용함 (예: "화염정령.asset", "성기사.asset").
@@ -31,6 +38,9 @@ public class CardData : ScriptableObject
     [Header("기본 정보")]
     public string cardName;
 
+    [Tooltip("유닛인지 마법인지. 마법은 attack/health를 쓰지 않고 spellSlot에 놓임")]
+    public CardType cardType = CardType.Unit;
+
     [Tooltip("소속 클래스. 중립 카드는 비워두면 됨")]
     public CardClass cardClass;
 
@@ -40,7 +50,10 @@ public class CardData : ScriptableObject
     [Header("전투 수치")]
     [Tooltip("코스트. 표시할 땐 로마 숫자로 변환됨 (아래 CostAsRoman 참고)")]
     public int cost;
+
+    [Tooltip("마법 카드는 사용 안 함 (0으로 둠)")]
     public int attack;
+    [Tooltip("마법 카드는 사용 안 함 (0으로 둠)")]
     public int health;
 
     [Header("능력")]
