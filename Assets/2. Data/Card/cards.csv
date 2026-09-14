@@ -1,0 +1,4 @@
+﻿cardId,cardName,cost,attack,health,keywords,description
+1,화염정령,3,4,3,,불타는 정령체
+2,수호기사,4,2,6,Counter,방패로 몸을 지키는 기사
+3,치유사제,2,1,2,Heal,아군을 치유하는 사제
