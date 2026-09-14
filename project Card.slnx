@@ -55,6 +55,7 @@
   <Project Path="Unity.TestTools.CodeCoverage.Editor.OpenCover.Model.csproj" />
   <Project Path="Meta.XR.HandReadinessTool.Editor.csproj" />
   <Project Path="Unity.TextMeshPro.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.TextMeshPro.Editor.csproj" />
   <Project Path="Oculus.VR.Scripts.Editor.csproj" />
   <Project Path="Unity.Burst.Editor.csproj" />
@@ -122,7 +123,6 @@
   <Project Path="Meta.XR.Editor.UPST.Notifications.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="Unity.RenderPipeline.Universal.ShaderLibrary.csproj" />
-  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Meta.XR.RuntimeOptimizer.csproj" />
   <Project Path="Meta.XR.Editor.Callbacks.csproj" />
   <Project Path="Unity.XR.OpenXR.Features.RuntimeDebugger.csproj" />
@@ -145,6 +145,7 @@
   <Project Path="Unity.XR.OpenXR.Features.MockRuntime.csproj" />
   <Project Path="UnityEditor.SpatialTracking.csproj" />
   <Project Path="Unity.Rendering.LightTransport.Editor.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Unity.Collections.Editor.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Config.Runtime.csproj" />
   <Project Path="Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.csproj" />
@@ -178,6 +179,7 @@
   <Project Path="Unity.VisualScripting.Flow.Player.csproj" />
   <Project Path="Unity.PerformanceTesting.Player.csproj" />
   <Project Path="Unity.TextMeshPro.Player.csproj" />
+  <Project Path="Assembly-CSharp.Player.csproj" />
   <Project Path="Meta.XR.ImmersiveDebugger.DevAgent.Player.csproj" />
   <Project Path="Unity.VisualScripting.State.Player.csproj" />
   <Project Path="meta.xr.json.Player.csproj" />
@@ -195,7 +197,6 @@
   <Project Path="Unity.XR.OpenXR.Features.MetaQuestSupport.Player.csproj" />
   <Project Path="Meta.XR.ImmersiveDebugger.Interface.Player.csproj" />
   <Project Path="Unity.RenderPipeline.Universal.ShaderLibrary.Player.csproj" />
-  <Project Path="Assembly-CSharp.Player.csproj" />
   <Project Path="Meta.XR.RuntimeOptimizer.Player.csproj" />
   <Project Path="Unity.XR.OpenXR.Features.RuntimeDebugger.Player.csproj" />
   <Project Path="UnityEngine.SpatialTracking.Player.csproj" />
