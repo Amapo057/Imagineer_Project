@@ -1,6 +1,5 @@
 using UnityEngine;
 using OpenCvSharp;
-using UnityEngine.UIElements;
 
 public class TrackingMarker : MonoBehaviour
 {
@@ -8,22 +7,21 @@ public class TrackingMarker : MonoBehaviour
     [SerializeField] private TMPro.TextMeshProUGUI debugText1;
     [SerializeField] private TMPro.TextMeshProUGUI debugText2;
     [SerializeField] private TMPro.TextMeshProUGUI debugText3;
-    [SerializeField] private TMPro.TextMeshProUGUI debugText4;
     // 움직일 모델 앵커
     [SerializeField] private GameObject markerAnchor;
     // 탐지 코드 연결
     [SerializeField] private MarkerDetecter markerDetecter;
     // 데드존 설정값
     [SerializeField] private float positionDeadZone = 0.002f;
-    [SerializeField] private float rotationDeadZone = 1.0f;
+    [SerializeField] private float rotationDeadZone = 2.0f;
 
     // 앵커 월드기준 위치 저장용 변수
     private Vector3 worldPosition = Vector3.zero;
     private Quaternion worldRotation = Quaternion.identity;
     
     // 데드존용 좌표 변수
-    Vector3 deadZonePosition;
-    Quaternion deadZoneRotation;
+    private Vector3 deadZonePosition;
+    private Quaternion deadZoneRotation;
     private bool poseInitialized = false;
 
     void Update()
@@ -32,19 +30,19 @@ public class TrackingMarker : MonoBehaviour
         {
             debugText1.text = $"ID: {string.Join("\n", result.ids)}";
             LocalToWroldPos(result);
+            
+            
         }
-
         // 이동 여부 판정 함수로 이동여부 bool 받기
         var (applyPosition, applyRotation) = DeadZoneLimit();
-        
         if (applyPosition)
         {
             // 보간으로 부드럽게 움직이도록 구성
-            markerAnchor.transform.position = Vector3.Lerp(markerAnchor.transform.position, worldPosition, 0.8f);
+            markerAnchor.transform.position = Vector3.Lerp(markerAnchor.transform.position, worldPosition, 1f);
         }
         if (applyRotation)
         {
-            markerAnchor.transform.rotation = Quaternion.Slerp(markerAnchor.transform.rotation, worldRotation, 1f);
+            markerAnchor.transform.rotation = Quaternion.Slerp(markerAnchor.transform.rotation, worldRotation, 0.6f);
         }
     }
     private void LocalToWroldPos(MarkerDetectionResult result)
@@ -118,14 +116,19 @@ public class TrackingMarker : MonoBehaviour
             {
                 applyPosition = false;
             }
-            // 클 시 데드존 기준값을 현재 위치로 변경
-            else{deadZonePosition = worldPosition;}
+            else
+            {
+                deadZonePosition = worldPosition;
+            }
 
-            if (rotationDelta <= rotationDeadZone)
+            if (rotationDelta <= rotationDeadZone || rotationDelta >= 160)
             {
                 applyRotation = false;
             }
-            else{deadZoneRotation = worldRotation;}
+            else
+            {
+                deadZoneRotation = worldRotation;
+            }
         }
         return (applyPosition, applyRotation);
     }
