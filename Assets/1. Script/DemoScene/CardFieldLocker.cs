@@ -2,6 +2,7 @@ using UnityEngine;
 
 public class CardFieldLocker : MonoBehaviour
 {
+    private bool isField;
     private void OnTriggerEnter(Collider other)
     {
         if(other.CompareTag("Field"))
@@ -11,6 +12,16 @@ public class CardFieldLocker : MonoBehaviour
 
             transform.position = pos;
             
+            isField = true;
         }
+    }
+    private void OnTriggerExit(Collider other)
+    {
+        isField = false;
+    }
+    // 필드 여부 체크 함수
+    public bool IsFied()
+    {
+        return isField;
     }
 }

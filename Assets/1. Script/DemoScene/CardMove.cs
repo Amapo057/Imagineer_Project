@@ -24,6 +24,7 @@ public class CardMove : MonoBehaviour
                     selectedCard = hit.collider.transform;
                 }
             }
+            // 카드 들고있으면 다음 클릭시 해당 위치로 이동
             else
             {
                 if(Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, groundLayer))
