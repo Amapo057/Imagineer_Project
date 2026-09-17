@@ -25,6 +25,7 @@
   <Project Path="Unity.XR.OpenXR.csproj" />
   <Project Path="Unity.Burst.csproj" />
   <Project Path="Oculus.VR.Editor.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.VisualScripting.Flow.Editor.csproj" />
   <Project Path="Unity.VisualStudio.Editor.csproj" />
   <Project Path="Unity.InputSystem.csproj" />
@@ -55,7 +56,6 @@
   <Project Path="Unity.TestTools.CodeCoverage.Editor.OpenCover.Model.csproj" />
   <Project Path="Meta.XR.HandReadinessTool.Editor.csproj" />
   <Project Path="Unity.TextMeshPro.csproj" />
-  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.TextMeshPro.Editor.csproj" />
   <Project Path="Oculus.VR.Scripts.Editor.csproj" />
   <Project Path="Unity.Burst.Editor.csproj" />
@@ -165,6 +165,7 @@
   <Project Path="UnityEngine.TestRunner.Player.csproj" />
   <Project Path="Unity.XR.OpenXR.Player.csproj" />
   <Project Path="Unity.Burst.Player.csproj" />
+  <Project Path="Assembly-CSharp.Player.csproj" />
   <Project Path="Unity.InputSystem.Player.csproj" />
   <Project Path="meta.xr.ai.mcpbridge.Player.csproj" />
   <Project Path="Meta.XR.ImmersiveDebugger.Player.csproj" />
@@ -179,7 +180,6 @@
   <Project Path="Unity.VisualScripting.Flow.Player.csproj" />
   <Project Path="Unity.PerformanceTesting.Player.csproj" />
   <Project Path="Unity.TextMeshPro.Player.csproj" />
-  <Project Path="Assembly-CSharp.Player.csproj" />
   <Project Path="Meta.XR.ImmersiveDebugger.DevAgent.Player.csproj" />
   <Project Path="Unity.VisualScripting.State.Player.csproj" />
   <Project Path="meta.xr.json.Player.csproj" />
