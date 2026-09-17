@@ -13,13 +13,16 @@ public class GameManager
     public GameStateManager State { get; } = new GameStateManager();
     public GameBoardState Board { get; } = new GameBoardState();
 
-    // 게임이 끝났을 때 쏘는 이벤트 (이긴 쪽을 알려줌)
-    public event Action<PlayerSide> OnGameOver;
+    // 게임이 끝났을 때 쏘는 이벤트. 이긴 쪽을 알려주고, 무승부면 null이 넘어옴
+    // (무승부는 "둘 다 필드+손+덱에 카드가 한 장도 없을 때 명치 맞은 횟수가 같은 경우"에만 발생)
+    public event Action<PlayerSide?> OnGameOver;
 
     private bool isGameOver;
+    public bool IsGameOver => isGameOver;
 
-    // 지금이 게임 전체에서 몇 번째 턴인지. 1이면 "첫 턴 공격 불가" 규칙이 적용됨
+    // 지금이 게임 전체에서 몇 번째 턴인지 (선공/후공 턴을 합쳐서 셈). 1이면 "첫 턴 공격 불가" 규칙이 적용됨
     private int turnNumber = 1;
+    public int TurnNumber => turnNumber;
 
     public GameManager()
     {
@@ -27,7 +30,8 @@ public class GameManager
         State.OnTurnChanged += _ => turnNumber++;
     }
 
-    // 게임 시작. firstPlayer를 안 정해주면 50%로 랜덤하게 선공을 정함
+    // 게임 시작. firstPlayer를 안 정해주면 50%로 랜덤하게 선공을 정함.
+    // 시작하자마자 TurnStart 처리(코스트/드로우)까지 끝내고 Main 페이즈에서 대기함
     public void StartGame(PlayerSide? firstPlayer = null)
     {
         isGameOver = false;
@@ -42,6 +46,30 @@ public class GameManager
         Board.GetBoard(second).ownTurnCount = 0;
 
         State.StartGame(starter);
+
+        // TurnStart는 준비 단계일 뿐이라, 플레이어가 실제로 행동할 수 있는 Main 페이즈까지 바로 진행시킴
+        AdvanceToMain();
+    }
+
+    // 턴 종료 버튼에서 호출. 남은 페이즈(EndTurn, Combat)를 전부 진행시켜서
+    // 상대 턴의 Main 페이즈까지 한 번에 넘어감 (이 데모에서만 쓰는 간단한 흐름)
+    public void EndTurn()
+    {
+        if (isGameOver) return;
+        AdvanceToMain();
+    }
+
+    // 게임오버가 아니면, Main 페이즈에 도달할 때까지 페이즈를 계속 진행시킴.
+    // 반드시 최소 한 번은 AdvancePhase()를 호출해야 함 — EndTurn()에서 호출될 때는
+    // 이미 Main 페이즈인 상태로 들어오기 때문에, while로 조건부터 검사하면 아무 일도 안 일어남
+    // (버튼을 눌러도 턴이 전혀 안 넘어가던 버그의 원인이었음)
+    private void AdvanceToMain()
+    {
+        do
+        {
+            State.AdvancePhase();
+        }
+        while (!isGameOver && State.CurrentPhase != TurnPhase.Main);
     }
 
     private void HandlePhaseEnter(TurnPhase phase)
@@ -94,7 +122,11 @@ public class GameManager
     // 상대 라인이 비어있으면 명치를 때림. 첫 턴에는 아예 공격이 일어나지 않음
     private void HandleCombat()
     {
-        if (turnNumber == 1) return;
+        if (turnNumber == 1)
+        {
+            CheckGameOver();
+            return;
+        }
 
         var attackerBoard = Board.GetBoard(State.CurrentPlayer);
         var defenderBoard = Board.GetOpponentBoard(State.CurrentPlayer);
@@ -129,19 +161,47 @@ public class GameManager
         CheckGameOver();
     }
 
-    private void CheckGameOver()
+    // 승패 체크. 우선순위:
+    // 1) 명치를 FaceHitThreshold번 맞은 쪽이 있으면 그 반대쪽이 승리
+    // 2) 둘 다 필드+손+덱에 카드가 한 장도 없으면, 명치를 덜 맞은(체력이 더 많이 남은) 쪽이 승리
+    //    (똑같이 맞았으면 무승부)
+    // public인 이유: 아직 "카드로 직접 공격" 로직이 없어서, 데모에서 명치 피해를 임의로 넣어보고
+    // (DemoTurnController의 디버그 버튼 등) 바로 승패 체크를 다시 돌려보기 위함
+    public void CheckGameOver()
     {
         if (isGameOver) return;
 
         if (Board.me.IsDefeated)
         {
-            isGameOver = true;
-            OnGameOver?.Invoke(PlayerSide.Opponent);
+            EndGame(PlayerSide.Opponent);
+            return;
         }
-        else if (Board.opponent.IsDefeated)
+        if (Board.opponent.IsDefeated)
         {
-            isGameOver = true;
-            OnGameOver?.Invoke(PlayerSide.Me);
+            EndGame(PlayerSide.Me);
+            return;
         }
+
+        if (Board.me.HasNoCards && Board.opponent.HasNoCards)
+        {
+            if (Board.me.faceHitCount < Board.opponent.faceHitCount)
+            {
+                EndGame(PlayerSide.Me);
+            }
+            else if (Board.opponent.faceHitCount < Board.me.faceHitCount)
+            {
+                EndGame(PlayerSide.Opponent);
+            }
+            else
+            {
+                EndGame(null); // 무승부
+            }
+        }
+    }
+
+    private void EndGame(PlayerSide? winner)
+    {
+        isGameOver = true;
+        OnGameOver?.Invoke(winner);
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -60,6 +61,10 @@ public class PlayerBoardState
 
     // 명치를 GameRules.FaceHitThreshold번 맞으면 패배
     public bool IsDefeated => faceHitCount >= GameRules.FaceHitThreshold;
+
+    // 필드(4라인 + 마법 슬롯), 손패, 덱까지 전부 카드가 한 장도 없는지 여부.
+    // "둘 다 이 상태면 명치를 덜 맞은 쪽이 승리" 규칙에서 사용 (GameManager.CheckGameOver 참고)
+    public bool HasNoCards => hand.Count == 0 && deck.Count == 0 && spellSlot == null && Array.TrueForAll(lanes, c => c == null);
 
     // 체력이 0 이하인 카드를 필드에서 치움 (전투 페이즈가 끝날 때 호출됨)
     public void RemoveDeadCards()
