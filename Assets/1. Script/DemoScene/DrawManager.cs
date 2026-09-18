@@ -3,6 +3,11 @@ using UnityEngine;
 
 public class DrawManager : MonoBehaviour
 {
+    [Tooltip("이 덱이 내 덱인지 상대 덱인지 — DemoTurnController가 지금 턴 플레이어에 맞는 " +
+             "DrawManager를 찾는 데 씀 (MyDeck=Me, EnemyDeck=Opponent)")]
+    [SerializeField] private PlayerSide side;
+    public PlayerSide Side => side;
+
     [SerializeField] private GameObject cardPrefabs;
     [SerializeField] private Transform handCheckers;
 

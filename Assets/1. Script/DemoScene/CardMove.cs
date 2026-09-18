@@ -29,11 +29,6 @@ public class CardMove : MonoBehaviour
                 if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, cardLayer))
                 {
                     selectedCard = hit.collider.transform;
-                    Debug.Log($"[CardMove] 카드 집음: {selectedCard.name}");
-                }
-                else
-                {
-                    Debug.Log("[CardMove] 카드 레이어에 아무것도 안 맞음 (집기 실패)");
                 }
             }
             // 카드 들고있으면 다음 클릭시 해당 위치로 이동
@@ -43,7 +38,6 @@ public class CardMove : MonoBehaviour
                 {
                     Vector3 pos = hit.point;
                     pos.y += 0.05f;
-                    Debug.Log($"[CardMove] 바닥 히트: {hit.collider.name} @ {pos}");
 
                     bool canPlace;
                     if (demoTurnController != null)
@@ -51,11 +45,7 @@ public class CardMove : MonoBehaviour
                         // 필드 슬롯 위가 아니면(그냥 바닥이면) 낼 수 없음 — 카드는 반드시 필드 자리에 내야
                         // 코스트를 쓰고 실제 하수인으로 등록됨
                         FieldSlot slot = FindFieldSlot(pos);
-                        Debug.Log(slot != null
-                            ? $"[CardMove] FieldSlot 찾음: lane={slot.LaneIndex} side={slot.Side}"
-                            : "[CardMove] FieldSlot 못 찾음");
                         canPlace = slot != null && demoTurnController.TryPlaceMinion(slot, selectedCard.gameObject);
-                        Debug.Log($"[CardMove] TryPlaceMinion 결과: {canPlace}");
                     }
                     else
                     {
@@ -71,10 +61,6 @@ public class CardMove : MonoBehaviour
                     // 못 냈어도 들고 있던 카드는 놓아줌(취소)
                     selectedCard = null;
                 }
-                else
-                {
-                    Debug.Log("[CardMove] 바닥 레이어에 아무것도 안 맞음");
-                }
             }
         }
     }
@@ -83,14 +69,32 @@ public class CardMove : MonoBehaviour
     // FieldSlot의 콜라이더는 Is Trigger가 켜져 있어서, 프로젝트의 Physics 설정(Queries Hit Triggers)이
     // 꺼져 있으면 기본 OverlapSphere로는 아예 안 잡힘 — QueryTriggerInteraction.Collide로 그 설정과
     // 무관하게 항상 트리거도 잡히도록 명시함
+    //
+    // 주의: 실제 씬에서 각 FieldSlot의 박스 콜라이더가 슬롯 사이 간격(대략 0.3유닛)보다 훨씬 크게
+    // (월드 기준 Z축으로 약 1.5유닛) 잡혀 있어서, 필드 위 아무 데나 놓아도 내 필드/상대 필드/옆 라인
+    // 콜라이더가 한꺼번에 다 걸림. OverlapSphere가 돌려주는 순서는 거리순이 아니라서 그냥 첫 번째
+    // 걸 쓰면 항상 엉뚱한(예: 상대편) 슬롯이 골라지는 버그가 있었음 — 그래서 겹치는 후보들 중 pos와
+    // 실제로 가장 가까운 FieldSlot(슬롯 중심 기준)을 골라야 함
     private FieldSlot FindFieldSlot(Vector3 pos)
     {
         Collider[] hits = Physics.OverlapSphere(pos, fieldSlotSearchRadius, ~0, QueryTriggerInteraction.Collide);
+
+        FieldSlot closest = null;
+        float closestSqrDist = float.MaxValue;
+
         foreach (var col in hits)
         {
             var slot = col.GetComponentInParent<FieldSlot>();
-            if (slot != null) return slot;
+            if (slot == null) continue;
+
+            float sqrDist = (slot.transform.position - pos).sqrMagnitude;
+            if (sqrDist < closestSqrDist)
+            {
+                closestSqrDist = sqrDist;
+                closest = slot;
+            }
         }
-        return null;
+
+        return closest;
     }
 }

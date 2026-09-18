@@ -20,10 +20,15 @@ public class OnCardChecker : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         triggerCount++;
-        Debug.Log("OnTrigger");
     }
     private void OnTriggerExit(Collider other)
     {
         triggerCount--;
+
+        // 카드가 실제로 이 자리를 벗어났다는 뜻이므로, DrawManager가 SetOccupied(true)로
+        // 걸어뒀던 수동 점유 표시도 같이 풀어줘야 함. 안 풀면 한 번 쓰인 손패 자리는
+        // 카드가 떠난 뒤에도 영원히 "차있음"으로 남아서, 자리가 8개 다 소진되면
+        // Draw 버튼을 눌러도 더 이상 아무 카드도 안 나오는 버그가 있었음
+        manuallyOccupied = false;
     }
 }

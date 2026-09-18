@@ -1441,7 +1441,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c587df952edd2645af3ea856e398317, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DrawManager
-  side: 1
   cardPrefabs: {fileID: 2714747085319833341, guid: ae3952be456a65f4b849afcc805f00b5, type: 3}
   handCheckers: {fileID: 321921951}
   drawMoveDuration: 0.4
@@ -3974,7 +3973,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c587df952edd2645af3ea856e398317, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DrawManager
-  side: 0
   cardPrefabs: {fileID: 2714747085319833341, guid: ae3952be456a65f4b849afcc805f00b5, type: 3}
   handCheckers: {fileID: 414212761}
   drawMoveDuration: 0.4
@@ -4198,9 +4196,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2033346593}
-        m_TargetAssemblyTypeName: DemoTurnController, Assembly-CSharp
-        m_MethodName: OnDrawButtonClicked
+      - m_Target: {fileID: 723043742}
+        m_TargetAssemblyTypeName: DrawManager, Assembly-CSharp
+        m_MethodName: OnDrawButtonClick
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -4339,8 +4337,6 @@ MonoBehaviour:
   - {fileID: 1452011214}
   - {fileID: 722075478}
   - {fileID: 1741022693}
-  myDrawManager: {fileID: 1916829091}
-  enemyDrawManager: {fileID: 723043742}
 --- !u!4 &2033346594
 Transform:
   m_ObjectHideFlags: 0
@@ -4551,9 +4547,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2033346593}
-        m_TargetAssemblyTypeName: DemoTurnController, Assembly-CSharp
-        m_MethodName: OnDrawButtonClicked
+      - m_Target: {fileID: 1916829091}
+        m_TargetAssemblyTypeName: DrawManager, Assembly-CSharp
+        m_MethodName: OnDrawButtonClick
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

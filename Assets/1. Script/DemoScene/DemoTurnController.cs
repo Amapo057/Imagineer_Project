@@ -29,6 +29,12 @@ public class DemoTurnController : MonoBehaviour
              "MyFieldPosition/EnemyFieldPosition 하위 FieldPosition 오브젝트 8개를 전부 넣어두면 됨")]
     [SerializeField] private List<FieldSlot> fieldSlots = new List<FieldSlot>();
 
+    [Header("드로우 (MyDeck / EnemyFieldPosition 하위 EnemyDeck)")]
+    [Tooltip("Draw 버튼을 누르면 지금 턴 플레이어가 Me인지 Opponent인지에 따라 " +
+             "이 둘 중 하나의 DrawManager만 실제로 카드를 뽑음")]
+    [SerializeField] private DrawManager myDrawManager;
+    [SerializeField] private DrawManager enemyDrawManager;
+
     private GameManager gameManager;
 
     void Start()
@@ -61,19 +67,35 @@ public class DemoTurnController : MonoBehaviour
         if (cameraTurnController != null) cameraTurnController.FlipCamera();
     }
 
+    // "드로우" 버튼 OnClick에 연결. 지금 턴 플레이어(Me/Opponent)의 실제 덱에서 카드를 한 장
+    // 손패로 옮기고, 성공했을 때만 그 편의 DrawManager로 비주얼 카드를 그 편 손패 자리에 띄움.
+    // 예전에는 DrawManager.OnDrawButtonClick()을 버튼에 직접 연결해서 항상 같은 쪽(내 덱)에서만
+    // 카드가 나왔고, 실제 손패 데이터와도 연결되어 있지 않았음 — 그래서 턴이 넘어가도 항상 내 쪽에서
+    // 카드가 나오고, 코스트가 남아 있어도 실제 손패(GameManager 쪽)에는 카드가 없어서 못 내는 버그가 있었음
+    public void OnDrawButtonClicked()
+    {
+        if (gameManager == null || gameManager.IsGameOver) return;
+
+        PlayerSide current = gameManager.State.CurrentPlayer;
+        if (!gameManager.TryDrawCard(current)) return; // 덱이 비었으면 아무 일도 안 일어남
+
+        DrawManager drawManager = current == PlayerSide.Me ? myDrawManager : enemyDrawManager;
+        if (drawManager != null) drawManager.OnDrawButtonClick();
+
+        UpdateTurnText();
+    }
+
     // CardMove가 카드를 필드 슬롯 위에 내려놓을 때 호출.
     // 지금 턴 플레이어의 슬롯이 맞고, 그 라인이 비어있고, 코스트가 1 이상 있고, 낼 손패가 있어야 성공함.
     // 성공하면 코스트 1 소모 + 손패에서 한 장 빼서(카드 종류 구분은 안 함) 공1/체2 하수인으로 필드에 등록
     public bool TryPlaceMinion(FieldSlot slot, GameObject cardVisual)
     {
-        Debug.Log($"[TryPlaceMinion] 체크: gameManager null={gameManager == null}, IsGameOver={gameManager?.IsGameOver}, slot null={slot == null}, CurrentPlayer={gameManager?.State?.CurrentPlayer}");
         if (gameManager == null || gameManager.IsGameOver || slot == null)
         {
             return false;
         }
         if (slot.Side != gameManager.State.CurrentPlayer)
         {
-            Debug.Log($"[TryPlaceMinion] 실패: 슬롯 편({slot.Side}) != 지금 턴({gameManager.State.CurrentPlayer})");
             return false;
         }
 
@@ -81,17 +103,14 @@ public class DemoTurnController : MonoBehaviour
 
         if (board.lanes[slot.LaneIndex] != null)
         {
-            Debug.Log($"[TryPlaceMinion] 실패: lane {slot.LaneIndex} 에 이미 하수인 있음");
             return false;
         }
         if (board.currentCost < 1)
         {
-            Debug.Log($"[TryPlaceMinion] 실패: 코스트 부족 ({board.currentCost})");
             return false;
         }
         if (board.hand.Count == 0)
         {
-            Debug.Log("[TryPlaceMinion] 실패: 손패 없음");
             return false;
         }
 

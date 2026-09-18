@@ -110,12 +110,23 @@ public class GameManager
         }
         if (board.spellSlot != null) board.spellSlot.hasAttackedThisTurn = false;
 
-        if (board.deck.Count > 0)
-        {
-            var drawn = board.deck[0];
-            board.deck.RemoveAt(0);
-            board.hand.Add(drawn);
-        }
+        // 드로우는 더 이상 여기서 자동으로 안 함 — TryDrawCard(side)를 통해 Draw 버튼을
+        // 눌렀을 때만 일어나도록 데모 쪽(DemoTurnController)에서 명시적으로 호출함
+    }
+
+    // 특정 편의 덱에서 카드 한 장을 손패로 가져옴. Draw 버튼 클릭에서 호출됨.
+    // 덱이 비어있거나 게임이 끝났으면 아무 일도 안 하고 false를 돌려줌
+    public bool TryDrawCard(PlayerSide side)
+    {
+        if (isGameOver) return false;
+
+        var board = Board.GetBoard(side);
+        if (board.deck.Count == 0) return false;
+
+        var drawn = board.deck[0];
+        board.deck.RemoveAt(0);
+        board.hand.Add(drawn);
+        return true;
     }
 
     // 전투 페이즈: 현재 턴 플레이어의 4라인이 상대의 같은 라인을 공격.
