@@ -48,6 +48,14 @@ public class DemoTurnController : MonoBehaviour
 
         gameManager.StartGame();
 
+        // 선공은 StartGame() 안에서 랜덤으로 정해지는데, Main Camera 기본 배치는 항상
+        // "Me가 선공"이라고 가정한 방향임. 실제 선공이 Opponent로 뽑혔으면 카메라를 한 번
+        // 즉시(애니메이션 없이) 맞춰줘야, 1턴부터 매 턴 카메라가 계속 반대로 보이는 문제가 안 생김
+        if (gameManager.State.CurrentPlayer == PlayerSide.Opponent && cameraTurnController != null)
+        {
+            cameraTurnController.SnapFlip();
+        }
+
         if (resultText != null) resultText.text = "";
         UpdateTurnText();
     }
@@ -132,6 +140,11 @@ public class DemoTurnController : MonoBehaviour
 
         board.currentCost -= 1;
         slot.occupyingCard = cardVisual;
+
+        // 손패에서 카드가 하나 빠졌으니, 그 편의 DrawManager한테 알려서 남은 손패 카드들이
+        // 빈칸 없이 왼쪽으로 당겨지도록 함
+        DrawManager drawManager = gameManager.State.CurrentPlayer == PlayerSide.Me ? myDrawManager : enemyDrawManager;
+        if (drawManager != null) drawManager.RemoveCardFromHand(cardVisual);
 
         UpdateTurnText();
         return true;

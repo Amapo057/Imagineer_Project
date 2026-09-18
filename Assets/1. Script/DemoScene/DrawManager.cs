@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class DrawManager : MonoBehaviour
@@ -11,50 +12,61 @@ public class DrawManager : MonoBehaviour
     [SerializeField] private GameObject cardPrefabs;
     [SerializeField] private Transform handCheckers;
 
-    [Tooltip("카드가 덱(이 오브젝트) 위치에서 손패 자리까지 이동하는 데 걸리는 시간")]
+    [Tooltip("카드가 이동하는 데 걸리는 시간 (덱→손패, 그리고 카드를 써서 나머지가 당겨질 때 둘 다 씀)")]
     [SerializeField] private float drawMoveDuration = 0.4f;
 
-    private OnCardChecker[] checkersTrigger;
+    // 손패 슬롯들의 "위치"만 순서대로 들고 있음. 예전에는 OnCardChecker의 트리거 감지로
+    // 빈자리를 찾았는데, 그러면 카드를 하나 쓰고 나면 그 자리만 비고 나머지 카드는 그대로 있어서
+    // 손패 중간에 구멍이 뚫린 것처럼 보였음. 이제는 카드를 "왼쪽부터 순서대로" 관리하는 리스트로
+    // 바꿔서, 카드가 하나 빠지면 그 뒤 카드들을 전부 한 칸씩 당겨서 항상 빈칸 없이 모이게 함
+    private Transform[] slotPositions;
+    private readonly List<Transform> handCards = new List<Transform>();
 
-    // 게임 시작시 필드 위치 받아오기
     void Awake()
     {
-        checkersTrigger = handCheckers.GetComponentsInChildren<OnCardChecker>();
+        var checkers = handCheckers.GetComponentsInChildren<OnCardChecker>();
+        slotPositions = new Transform[checkers.Length];
+        for (int i = 0; i < checkers.Length; i++)
+        {
+            slotPositions[i] = checkers[i].transform;
+        }
     }
 
-    // 버튼 누르면 왼쪽부터 빈자리 검사 후 카드 배치
+    // 버튼 누르면 손패 맨 뒤(현재 카드 수만큼 뒤) 자리에 카드 한 장 추가
     public void OnDrawButtonClick()
     {
-        OnCardChecker emptyChecker = null;
-        Vector3 emptyPosition = Vector3.zero;
-        int i = 0;
-        foreach(var checker in checkersTrigger)
-        {
-            if (!checker.IsTriggered)
-            {
-                emptyChecker = checker;
-                emptyPosition = checker.transform.position;
-                i = 0;
-                break;
-            }
-            i++;
-        }
-        // 필드 꽉찼으면 안뽑기
-        if (i > 7 || emptyChecker == null)
+        // 손패 꽉 찼으면 안 뽑기
+        if (handCards.Count >= slotPositions.Length)
         {
             return;
         }
 
-        // 트리거 감지를 기다리지 않고 바로 점유 처리 — 안 그러면 감지가 늦거나 안 될 때
-        // 다음 카드가 같은 자리에 계속 겹쳐서 나옴
-        emptyChecker.SetOccupied(true);
-
-        // 덱(이 오브젝트) 위치에서 카드를 생성해서 손패 자리까지 이동시키는 연출
         GameObject card = Instantiate(cardPrefabs, transform.position, Quaternion.identity);
-        StartCoroutine(MoveCardToHand(card.transform, emptyPosition));
+        handCards.Add(card.transform);
+
+        Vector3 targetPosition = slotPositions[handCards.Count - 1].position;
+        StartCoroutine(MoveCard(card.transform, targetPosition));
     }
 
-    private IEnumerator MoveCardToHand(Transform card, Vector3 targetPosition)
+    // 손패의 카드 하나가 실제로 사용(필드에 배치 등)돼서 더 이상 손패에 없을 때 호출.
+    // 이 카드를 목록에서 빼고, 그 뒤에 있던 카드들을 전부 한 칸씩 왼쪽 자리로 당겨서
+    // 빈칸 없이 다시 모이도록 함
+    public void RemoveCardFromHand(GameObject card)
+    {
+        if (card == null) return;
+
+        int index = handCards.IndexOf(card.transform);
+        if (index < 0) return;
+
+        handCards.RemoveAt(index);
+
+        for (int i = index; i < handCards.Count; i++)
+        {
+            StartCoroutine(MoveCard(handCards[i], slotPositions[i].position));
+        }
+    }
+
+    private IEnumerator MoveCard(Transform card, Vector3 targetPosition)
     {
         Vector3 startPosition = card.position;
         float elapsed = 0f;
