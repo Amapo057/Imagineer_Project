@@ -11,9 +11,11 @@ public class TrackingMarker : MonoBehaviour
     [SerializeField] private GameObject markerAnchor;
     // 탐지 코드 연결
     [SerializeField] private MarkerDetecter markerDetecter;
+    // 손 속도 측정 코드
+    [SerializeField] private HandManager handManager;
     // 데드존 설정값
-    [SerializeField] private float positionDeadZone = 0.002f;
-    [SerializeField] private float rotationDeadZone = 2.0f;
+    private float positionDeadZone = 0.001f;
+    private float rotationDeadZone = 1.0f;
 
     // 앵커 월드기준 위치 저장용 변수
     private Vector3 worldPosition = Vector3.zero;
@@ -24,6 +26,21 @@ public class TrackingMarker : MonoBehaviour
     private Quaternion deadZoneRotation;
     private bool poseInitialized = false;
 
+    // 손 속도 보간용 변수
+    // 손 속도 최소, 최대 기준
+    private float minHandSpeed = 0.003f;
+    private float maxHandSpeed = 1f;
+    // 따라갈 속도 최대 최소 비율
+    private float minFollowSpeed = 2f;
+    private float maxFollowSpeed = 80f;
+
+    // 이동 여부 변수
+    private bool isHandMove = false;
+    private bool isCardMove = false;
+    private float maxSpeed = 0f;
+
+
+
     void Update()
     {
         if(markerDetecter.TryGetMarkerResult(out var result))
@@ -31,18 +48,43 @@ public class TrackingMarker : MonoBehaviour
             debugText1.text = $"ID: {string.Join("\n", result.ids)}";
             LocalToWroldPos(result);
             
-            
         }
+        // 손 속도를 활용해 보간값으로 활용
+        float followSpeed = GetCardFollowSpeed(handManager.GetHandSpeed());
+        // 손이 이동중이면 속도 기록
+        if (isHandMove)
+        {
+            isCardMove = true;
+            maxSpeed = Mathf.Max(maxSpeed, followSpeed);
+        }
+        // 현재 카드와 앵커의 거리와 각도를 비교해 2cm이상 또는 10도 이상 차이이면 이전의 최대속도로 이동
+        float cardToMarkerDistance = Vector3.Distance(markerAnchor.transform.position, worldPosition);
+        float cardToMarkerAngle = Quaternion.Angle(markerAnchor.transform.rotation, worldRotation);
+        if(isCardMove && !isHandMove)
+        {
+            if (cardToMarkerDistance > 0.02f || cardToMarkerAngle > 10f)
+            {
+                followSpeed = maxSpeed;
+            }
+            else
+            {
+                isCardMove = false;
+                maxSpeed = 0f;
+            }
+        }
+        // 적용한 속도를 사용해 보간에 사용할 값으로 변환
+        float t = 1f - Mathf.Exp(-followSpeed * Time.deltaTime);
+
         // 이동 여부 판정 함수로 이동여부 bool 받기
         var (applyPosition, applyRotation) = DeadZoneLimit();
         if (applyPosition)
         {
             // 보간으로 부드럽게 움직이도록 구성
-            markerAnchor.transform.position = Vector3.Lerp(markerAnchor.transform.position, worldPosition, 1f);
+            markerAnchor.transform.position = Vector3.Lerp(markerAnchor.transform.position, worldPosition, t);
         }
         if (applyRotation)
         {
-            markerAnchor.transform.rotation = Quaternion.Slerp(markerAnchor.transform.rotation, worldRotation, 0.6f);
+            markerAnchor.transform.rotation = Quaternion.Slerp(markerAnchor.transform.rotation, worldRotation, t);
         }
     }
     private void LocalToWroldPos(MarkerDetectionResult result)
@@ -121,7 +163,7 @@ public class TrackingMarker : MonoBehaviour
                 deadZonePosition = worldPosition;
             }
 
-            if (rotationDelta <= rotationDeadZone || rotationDelta >= 160)
+            if (rotationDelta <= rotationDeadZone || rotationDelta >= 150)
             {
                 applyRotation = false;
             }
@@ -131,5 +173,21 @@ public class TrackingMarker : MonoBehaviour
             }
         }
         return (applyPosition, applyRotation);
+    }
+
+    private float GetCardFollowSpeed(float handSpeed)
+    {
+        // 현재 손 속도를 최소, 최대값과 비교해 0~1값으로 출력
+        float t = Mathf.InverseLerp(minHandSpeed, maxHandSpeed, handSpeed);
+        if (t > 0.3)
+        {
+            isHandMove = true;
+        }
+        else
+        {
+            isHandMove = false;
+        }
+        // 앞서 나온 0~1값으로 최소, 최대 사이 비율을 맞춰 값 반환
+        return Mathf.Lerp(minFollowSpeed, maxFollowSpeed, t);
     }
 }
