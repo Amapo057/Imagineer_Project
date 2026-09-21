@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: 09_I
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   cardId: 9
-  cardName: "\uACF5\uC6A9-9"
+  cardName: "\uACF5\uC6A9-\uD3ED\uD48D\uADF8\uB9AC\uD540"
   cardType: 0
   cardClass: {fileID: 0}
   description: "\uC804\uD22C\uC758\uD568\uC131: \uC815\uBA74 \uB77C\uC778\uC758 \uC801\uC5D0\uAC8C

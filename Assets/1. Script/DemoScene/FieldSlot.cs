@@ -7,16 +7,33 @@ using UnityEngine;
 /// </summary>
 public class FieldSlot : MonoBehaviour
 {
-    [Tooltip("이 슬롯의 라인 인덱스 (0~3)")]
+    [Tooltip("이 슬롯의 라인 인덱스 (0~3). 마법 전용 슬롯(isSpellSlot)은 board.lanes에 안 들어가므로 의미 없음(-1)")]
     [SerializeField] private int laneIndex;
 
     [Tooltip("이 슬롯이 내 필드인지 상대 필드인지")]
     [SerializeField] private PlayerSide side;
 
+    [Tooltip("4라인과 별도로 마법 카드 전용으로 쓰는 슬롯인지 여부. true면 유닛은 여기 못 내고 마법만 낼 수 있음 " +
+             "(DemoTurnController.TryPlayCard 참고). 구분을 위해 Start()에서 렌더러 색을 파란색으로 바꿈")]
+    [SerializeField] private bool isSpellSlot;
+
     public int LaneIndex => laneIndex;
     public PlayerSide Side => side;
+    public bool IsSpellSlot => isSpellSlot;
 
     // 지금 이 슬롯에 놓여있는 카드의 비주얼 오브젝트 (없으면 null).
     // 하수인이 전투로 죽으면 DemoTurnController가 이 참조로 비주얼 오브젝트를 같이 파괴함
     [System.NonSerialized] public GameObject occupyingCard;
+
+    // 마법 전용 슬롯은 일반 라인 슬롯(빨간색)과 구분되도록 파란색으로 표시함
+    void Start()
+    {
+        if (!isSpellSlot) return;
+
+        var renderer = GetComponent<MeshRenderer>();
+        if (renderer != null)
+        {
+            renderer.material.color = Color.blue;
+        }
+    }
 }

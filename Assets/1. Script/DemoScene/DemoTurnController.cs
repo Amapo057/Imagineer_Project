@@ -23,18 +23,27 @@ public class DemoTurnController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI resultText;
     [SerializeField] private TextMeshProUGUI costText;
 
-    [Header("테스트용 덱 (선택사항)")]
-    [Tooltip("비워두면 드로우가 계속 실패하고, 시작하자마자 '둘 다 카드 없음' 상태라 바로 무승부로 끝남. " +
-             "턴/코스트 흐름을 여러 턴 지켜보고 싶으면 CardData 에셋을 몇 장 넣어두는 걸 추천")]
+    [Header("카드 덱 구성 (실제 게임과 동일한 로직)")]
+    [Tooltip("27종 카드 전체가 들어있는 CardDatabase 에셋. 꽂혀 있으면 공용9+선택한 진영7+마법4=20장을 " +
+             "매 게임 새로 랜덤 셔플해서 진짜 카드게임처럼 덱을 구성함. 이 로직(CardDatabase.BuildShuffledDeck)은 " +
+             "GameLogic 폴더 소속이라 나중에 실제 게임 씬을 만들 때도 그대로 옮겨서 재사용하면 됨 — 데모 전용 코드가 아님")]
+    [SerializeField] private CardDatabase cardDatabase;
+    [SerializeField] private CardDatabase.Faction myFaction = CardDatabase.Faction.Human;
+    [SerializeField] private CardDatabase.Faction opponentFaction = CardDatabase.Faction.Demon;
+
+    [Header("테스트용 덱 (선택사항 — cardDatabase가 비어있을 때만 사용됨)")]
+    [Tooltip("cardDatabase를 안 꽂아두면 이 리스트를 그대로 씀(카드 몇 장만 놓고 좁게 테스트하고 싶을 때 대비). " +
+             "비워두면 드로우가 계속 실패하고, 시작하자마자 '둘 다 카드 없음' 상태라 바로 무승부로 끝남")]
     [SerializeField] private List<CardData> testDeckMe = new List<CardData>();
     [SerializeField] private List<CardData> testDeckOpponent = new List<CardData>();
 
     [Tooltip("턴 종료 시 반대편을 보도록 카메라를 돌려주는 컨트롤러 (Main Camera에 붙임)")]
     [SerializeField] private CameraTurnController cameraTurnController;
 
-    [Header("필드 슬롯 (My/EnemyFieldPosition 하위 8개 전부)")]
+    [Header("필드 슬롯 (My/EnemyFieldPosition 하위 10개 전부: 라인 4x2 + 마법 전용 슬롯 1x2)")]
     [Tooltip("카드를 냈을 때 실제로 어느 라인에 하수인이 들어가는지 판단하는 데 씀. " +
-             "MyFieldPosition/EnemyFieldPosition 하위 FieldPosition 오브젝트 8개를 전부 넣어두면 됨")]
+             "MyFieldPosition/EnemyFieldPosition 하위 FieldPosition 오브젝트 전부(라인 슬롯 8개 + 마법 전용 슬롯 2개, " +
+             "isSpellSlot=true)를 넣어두면 됨")]
     [SerializeField] private List<FieldSlot> fieldSlots = new List<FieldSlot>();
 
     [Header("드로우 (MyDeck / EnemyFieldPosition 하위 EnemyDeck)")]
@@ -56,9 +65,20 @@ public class DemoTurnController : MonoBehaviour
         gameManager = new GameManager();
         gameManager.OnGameOver += HandleGameOver;
 
-        // StartGame()이 첫 턴 드로우까지 바로 처리하므로, 덱은 그 전에 채워둠
-        gameManager.Board.me.deck.AddRange(testDeckMe);
-        gameManager.Board.opponent.deck.AddRange(testDeckOpponent);
+        // StartGame()이 첫 턴 드로우까지 바로 처리하므로, 덱은 그 전에 채워둠.
+        // cardDatabase가 꽂혀 있으면 실제 게임과 완전히 같은 방식(공용9 + 선택한 진영7 + 마법4 = 20장,
+        // 매번 랜덤 셔플)으로 덱을 구성하고, 안 꽂혀 있으면 예전처럼 testDeckMe/testDeckOpponent를
+        // 그대로 씀(카드 몇 장만 놓고 좁게 테스트하고 싶을 때 대비한 하위 호환)
+        if (cardDatabase != null)
+        {
+            gameManager.Board.me.deck.AddRange(cardDatabase.BuildShuffledDeck(myFaction));
+            gameManager.Board.opponent.deck.AddRange(cardDatabase.BuildShuffledDeck(opponentFaction));
+        }
+        else
+        {
+            gameManager.Board.me.deck.AddRange(testDeckMe);
+            gameManager.Board.opponent.deck.AddRange(testDeckOpponent);
+        }
 
         gameManager.StartGame();
 
@@ -133,9 +153,11 @@ public class DemoTurnController : MonoBehaviour
     // 쪽 첫 카드가 코스트 5짜리라 "상대 턴에는 카드 제출이 아예 안 된다"처럼 보였던 원인이 이거였음).
     //
     // 그 카드가 유닛인지 마법인지에 따라 갈라짐:
-    //  - 유닛: 클릭한 슬롯의 라인이 비어있어야 하고, 실제 스탯 그대로 하수인으로 등록 + 전투의함성 처리
-    //  - 마법: 라인 점유 여부와 무관함(마법은 라인에 안 들어가고 spellSlot 개념도 아직 데모엔 없음 —
-    //    그냥 즉시 효과만 발동하고 비주얼 카드는 소모되어 사라짐). 내 필드 슬롯 아무 데나 클릭해서 내면 됨
+    //  - 유닛: 4라인 슬롯(빨간색, isSpellSlot=false)에만 낼 수 있고, 클릭한 슬롯의 라인이 비어있어야 하며,
+    //    실제 스탯 그대로 하수인으로 등록 + 전투의함성 처리
+    //  - 마법: 마법 전용 슬롯(파란색, isSpellSlot=true)에만 낼 수 있음. 라인 점유 개념은 없고
+    //    (PlayerBoardState.spellSlot 필드 자체도 여전히 안 씀 — 마법 슬롯은 순수 UX용 드롭 위치일 뿐)
+    //    그냥 즉시 효과만 발동하고 비주얼 카드는 소모되어 사라짐
     // 이름은 TryPlaceMinion이었는데 마법도 처리하게 되면서 TryPlayCard로 바꿈(CardMove.cs도 같이 수정)
     public bool TryPlayCard(FieldSlot slot, GameObject cardVisual)
     {
@@ -172,6 +194,14 @@ public class DemoTurnController : MonoBehaviour
         // 예전엔 카드 종류 상관없이 코스트를 무조건 1만 썼는데, 실제 27종 카드 디자인은 코스트가
         // 1~5로 다양해서 그대로 두면 밸런스가 의미 없어짐 — 카드 자신의 cost를 그대로 씀
         if (board.currentCost < playedCard.cost)
+        {
+            return false;
+        }
+
+        // 마법 카드는 전용 슬롯(파란색)에만, 유닛 카드는 4라인 슬롯(빨간색)에만 낼 수 있음.
+        // 마법 카드를 라인에 내거나 유닛을 마법 슬롯에 내는 건 둘 다 막아야 함
+        bool wantsSpellSlot = playedCard.cardType == CardType.Spell;
+        if (slot.IsSpellSlot != wantsSpellSlot)
         {
             return false;
         }
@@ -268,8 +298,11 @@ public class DemoTurnController : MonoBehaviour
         {
             if (TargetPicker == null) return; // 대상 선택 창구가 안 꽂혀 있으면 그냥 무기 효과는 무시됨
 
+            // !s.IsSpellSlot을 lanes[s.LaneIndex] 접근보다 먼저 체크해야 함 — 마법 전용 슬롯은
+            // board.lanes(4칸)에 대응하는 라인이 없어서(laneIndex가 -1이거나 무의미함) 그대로 인덱싱하면
+            // 범위 밖 접근으로 터짐. && 단락 평가 덕분에 이 슬롯은 아예 lanes[] 조회까지 안 감
             var validTargets = fieldSlots
-                .Where(s => s != null && s.Side != slot.Side
+                .Where(s => s != null && !s.IsSpellSlot && s.Side != slot.Side
                             && gameManager.Board.GetBoard(s.Side).lanes[s.LaneIndex] != null)
                 .ToList();
 
@@ -307,8 +340,9 @@ public class DemoTurnController : MonoBehaviour
         {
             if (TargetPicker == null) return; // 무기와 동일하게, 대상 선택 창구가 없으면 그냥 무시됨
 
+            // 무기 키워드 타겟팅과 동일한 이유로 !s.IsSpellSlot을 먼저 체크함(마법 슬롯은 lanes[] 인덱싱 대상이 아님)
             var validTargets = fieldSlots
-                .Where(s => s != null && s.Side != side
+                .Where(s => s != null && !s.IsSpellSlot && s.Side != side
                             && gameManager.Board.GetBoard(s.Side).lanes[s.LaneIndex] != null)
                 .ToList();
 
@@ -333,7 +367,11 @@ public class DemoTurnController : MonoBehaviour
     {
         foreach (var slot in fieldSlots)
         {
-            if (slot == null || slot.occupyingCard == null) continue;
+            // 마법 슬롯은 occupyingCard가 애초에 절대 안 채워지므로(TryPlaceMinionOnLane에서만 세팅됨)
+            // 사실상 이 continue에서 안 걸리는 게 정상이지만, 혹시 나중에 마법 슬롯에도
+            // occupyingCard를 쓰는 코드가 생기는 실수를 대비해 명시적으로 한 번 더 막아둠
+            // (안 막으면 board.lanes[-1] 인덱싱으로 바로 터짐)
+            if (slot == null || slot.IsSpellSlot || slot.occupyingCard == null) continue;
 
             var board = gameManager.Board.GetBoard(slot.Side);
             bool stillAlive = board.lanes[slot.LaneIndex] != null;
