@@ -23,7 +23,8 @@ public enum CardKeyword
     Buff         = 1 << 9, // 강화 — 마법 전용. 이번 턴이 끝날 때까지 아군 하수인 전체 공격력 증가(GameRules.BuffSpellAttackBonus)
 }
 
-// 카드 종류. 유닛은 4라인에, 마법은 별도의 spellSlot에 놓임 (PlayerBoardState 참고)
+// 카드 종류. 유닛은 4라인에 배치되고, 마법은 라인과 별도인 마법 전용 필드 슬롯(파란색, FieldSlot.IsSpellSlot)
+// 위에서 시전 즉시 소모됨 — 유닛과 달리 PlayerBoardState에 카드 상태로 남지 않음(DemoTurnController 참고)
 public enum CardType
 {
     Unit,
@@ -39,15 +40,17 @@ public enum CardType
 public class CardData : ScriptableObject
 {
     [Header("카드 번호")]
-    [Tooltip("이 카드의 고유 번호 (1~40). 실물 카드 뒷면에 붙는 ArUco 마커 ID와 같은 값을 사용함 " +
-             "— 예: 17번 카드는 마커 ID도 17. VR 쪽에서 마커를 인식하면 이 번호로 바로 카드를 찾음")]
-    [Range(1, 40)]
+    [Tooltip("이 카드의 고유 번호 (1~27). 실물 카드 뒷면에 붙는 ArUco 마커 ID와 같은 값을 사용함 " +
+             "— 예: 17번 카드는 마커 ID도 17. VR 쪽에서 마커를 인식하면 이 번호로 바로 카드를 찾음. " +
+             "예전엔 카드 종류가 40개였는데(공용/진영 20/20 미러링), 덱 구성을 공용9+진영7+마법4=27종으로 " +
+             "바꾸면서 카드 종류 자체가 27개로 줄었음(cards.csv, CardDatabase 기준) — 그래서 상한도 27로 맞춤")]
+    [Range(1, 27)]
     public int cardId;
 
     [Header("기본 정보")]
     public string cardName;
 
-    [Tooltip("유닛인지 마법인지. 마법은 attack/health를 쓰지 않고 spellSlot에 놓임")]
+    [Tooltip("유닛인지 마법인지. 마법은 attack/health를 쓰지 않고, 필드에 남지 않은 채 즉시 효과만 발동함")]
     public CardType cardType = CardType.Unit;
 
     [Tooltip("소속 클래스. 중립 카드는 비워두면 됨")]

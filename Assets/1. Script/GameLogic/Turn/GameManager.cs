@@ -110,7 +110,6 @@ public class GameManager
         {
             if (card != null) card.hasAttackedThisTurn = false;
         }
-        if (board.spellSlot != null) board.spellSlot.hasAttackedThisTurn = false;
 
         // 드로우는 더 이상 여기서 자동으로 안 함 — TryDrawCard(side)를 통해 Draw 버튼을
         // 눌렀을 때만 일어나도록 데모 쪽(DemoTurnController)에서 명시적으로 호출함

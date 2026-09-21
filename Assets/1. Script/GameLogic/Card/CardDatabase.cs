@@ -53,6 +53,14 @@ public class CardDatabase : ScriptableObject
         return allCards.Where(c => c != null && c.cardId >= minId && c.cardId <= maxId);
     }
 
+    // 숫자 하나(cardId)로 카드 하나를 바로 찾음. 마커 인식 결과처럼 "번호 하나만 아는 상태"에서
+    // 그 번호에 해당하는 카드 정보(이름/수치/능력/홀로그램)를 바로 가져오고 싶을 때 씀.
+    // 없는 번호면 null을 돌려줌(호출부에서 null 체크 필요)
+    public CardData GetCardById(int cardId)
+    {
+        return allCards.FirstOrDefault(c => c != null && c.cardId == cardId);
+    }
+
     // 실제 플레이어 덱 구성 그대로: 공용 9 + 선택한 진영 7 + 마법 4 = 20장을 만들고,
     // 카드 순서를 랜덤 셔플해서 반환함. "덱에서 카드를 뽑는" 로직(GameManager.TryDrawCard)은
     // 항상 deck[0]을 가져가는 방식이라, 실제 무작위성은 여기서 순서를 섞는 걸로 전부 처리됨.

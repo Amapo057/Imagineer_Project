@@ -156,7 +156,7 @@ public class DemoTurnController : MonoBehaviour
     //  - 유닛: 4라인 슬롯(빨간색, isSpellSlot=false)에만 낼 수 있고, 클릭한 슬롯의 라인이 비어있어야 하며,
     //    실제 스탯 그대로 하수인으로 등록 + 전투의함성 처리
     //  - 마법: 마법 전용 슬롯(파란색, isSpellSlot=true)에만 낼 수 있음. 라인 점유 개념은 없고
-    //    (PlayerBoardState.spellSlot 필드 자체도 여전히 안 씀 — 마법 슬롯은 순수 UX용 드롭 위치일 뿐)
+    //    (마법 슬롯은 PlayerBoardState에 아무 상태도 안 남기는 순수 UX용 드롭 위치일 뿐)
     //    그냥 즉시 효과만 발동하고 비주얼 카드는 소모되어 사라짐
     // 이름은 TryPlaceMinion이었는데 마법도 처리하게 되면서 TryPlayCard로 바꿈(CardMove.cs도 같이 수정)
     public bool TryPlayCard(FieldSlot slot, GameObject cardVisual)
@@ -236,12 +236,25 @@ public class DemoTurnController : MonoBehaviour
 
         board.currentCost -= playedCard.cost;
         slot.occupyingCard = cardVisual;
+        SpawnHologram(playedCard, cardVisual);
 
         NotifyHandCardRemoved(cardVisual);
         ResolveBattlecry(playedCard, minion, slot);
 
         UpdateTurnText();
         return true;
+    }
+
+    // CardData.hologramPrefab을 카드 비주얼 위에 실제로 띄움. 지금까진 이 필드가 있기만 하고
+    // 아무 데서도 안 쓰여서(CardView는 텍스트만 채움) 유닛을 필드에 내도 모델이 안 나왔음.
+    // cardVisual의 자식으로 붙여서, 나중에 이 카드가 죽어서 cardVisual이 Destroy될 때
+    // (SyncDeadMinions 참고) 따로 안 치워줘도 자식째로 같이 파괴되도록 함.
+    // hologramPrefab이 비어있는 카드(지금 27장 전부 미배정 상태)는 그냥 조용히 아무 일도 안 함
+    private void SpawnHologram(CardData playedCard, GameObject cardVisual)
+    {
+        if (playedCard.hologramPrefab == null || cardVisual == null) return;
+
+        Instantiate(playedCard.hologramPrefab, cardVisual.transform.position, cardVisual.transform.rotation, cardVisual.transform);
     }
 
     // 마법 카드를 시전. 라인 개념이 없어서 바로 손패에서 빼고 코스트를 쓴 뒤 효과를 발동함.

@@ -20,9 +20,6 @@ public class PlayerBoardState
     // 소환 시 위치가 고정되고 이후 재배치는 안 됨
     public CardInstance[] lanes = new CardInstance[4];
 
-    // 마법 카드 전용 슬롯 (4라인과는 별개의 자리)
-    public CardInstance spellSlot;
-
     // 코스트. 화면 표시는 로마 숫자로 변환해서 보여줄 예정 (UI 쪽에서 처리)
     public int currentCost;
     public int maxCost;
@@ -62,9 +59,11 @@ public class PlayerBoardState
     // 명치를 GameRules.FaceHitThreshold번 맞으면 패배
     public bool IsDefeated => faceHitCount >= GameRules.FaceHitThreshold;
 
-    // 필드(4라인 + 마법 슬롯), 손패, 덱까지 전부 카드가 한 장도 없는지 여부.
-    // "둘 다 이 상태면 명치를 덜 맞은 쪽이 승리" 규칙에서 사용 (GameManager.CheckGameOver 참고)
-    public bool HasNoCards => hand.Count == 0 && deck.Count == 0 && spellSlot == null && Array.TrueForAll(lanes, c => c == null);
+    // 필드(4라인), 손패, 덱까지 전부 카드가 한 장도 없는지 여부.
+    // "둘 다 이 상태면 명치를 덜 맞은 쪽이 승리" 규칙에서 사용 (GameManager.CheckGameOver 참고).
+    // 마법 카드는 시전 즉시 소모되고 필드에 남지 않아서(DemoTurnController.TryCastSpell 참고)
+    // 여기 카운트할 "마법 슬롯" 자체가 없음 — 예전에 있던 spellSlot 필드(항상 null이던 죽은 코드)는 정리함
+    public bool HasNoCards => hand.Count == 0 && deck.Count == 0 && Array.TrueForAll(lanes, c => c == null);
 
     // 체력이 0 이하인 카드를 필드에서 치움 (전투 페이즈가 끝날 때 호출됨)
     public void RemoveDeadCards()
@@ -73,6 +72,5 @@ public class PlayerBoardState
         {
             if (lanes[i] != null && !lanes[i].IsAlive) lanes[i] = null;
         }
-        if (spellSlot != null && !spellSlot.IsAlive) spellSlot = null;
     }
 }
