@@ -3,6 +3,8 @@ using Meta.XR;
 using OpenCvSharp;
 using OpenCvSharp.Aruco;
 using System.Threading;
+using System.Collections.Generic;
+using System.Data.Common;
 
 public class MarkerDetecter : MonoBehaviour
 {
@@ -30,7 +32,7 @@ public class MarkerDetecter : MonoBehaviour
 
 
     // 마커의 크기인 19mm의 절반 사이즈를 기준으로 삼음
-    private float markerHalfSize = 0.019f/2f;
+    private float markerHalfSize = 0.0187f/2f;
 
     // 마커 크기 나타내는 변수
     private Point3f[] objectPoints;
@@ -55,7 +57,7 @@ public class MarkerDetecter : MonoBehaviour
     private Vector3 latestCameraPosition;
     private Quaternion latestCameraRotation;
     private DetectorParameters detectorParameters;
-    private MarkerDetectionResult markerDetectionResult; 
+    private List<MarkerDetectionResult> markerDetectionResult = new List<MarkerDetectionResult>(); 
 
     void Start()
     {
@@ -164,7 +166,7 @@ public class MarkerDetecter : MonoBehaviour
     }
 
     // 전처리된 흑백 영상을 받아 마커 탐색후 마커 아이디와 위치, 회전 반환
-    (int[] ids, double[] tvec, double[] rvec) DetectMarker(Mat gray)
+    (int[] ids, double[][] tvec, double[][] rvec) DetectMarker(Mat gray)
     {
         // 검출한 정보 담기용 변수
         int[] ids;
@@ -174,22 +176,30 @@ public class MarkerDetecter : MonoBehaviour
         // 마커 감지
         CvAruco.DetectMarkers(gray, dictionary, out corners, out ids, detectorParameters, out rejected);
 
+        // 미리 배열 공간 할당
         // 마커 위치
-        double[] tvec = null;
+        double[][] tvec = new double[ids.Length][];
         // 마커 회전 정보
-        double[] rvec = null;
+        double[][] rvec = new double[ids.Length][];
 
         if (ids.Length > 0 && corners.Length > 0)
         {
-            // 마커 정보, 코너 정보, 카메라 정보, 외곡정보, 출력받을 변수
-            Cv2.SolvePnP(objectPoints, corners[0], cameraMatrix, distCoeffs, ref rvec, ref tvec);
+            for(int i = 0; i < ids.Length; i++)
+            {
+                // 이차원 배열이라 내부 배열 따로 크기 할당
+                tvec[i] = new double[3];
+                rvec[i] = new double[3];
+                // 마커 정보, 코너 정보, 카메라 정보, 외곡정보, 출력받을 변수
+                Cv2.SolvePnP(objectPoints, corners[i], cameraMatrix, distCoeffs, ref rvec[i], ref tvec[i]);
+            }
+            
         }        
         return (ids, tvec, rvec);
     }
 
     // 변환 완료한 좌표 및 회전 반환
     // out을 사용해 조건에 따라 result의 값을 다르게 배정
-    public bool TryGetMarkerResult(out MarkerDetectionResult result)
+    public bool TryGetMarkerResult(out List<MarkerDetectionResult> result)
     {
         lock (resultLock)
         {
@@ -244,15 +254,18 @@ public class MarkerDetecter : MonoBehaviour
             // 값 이상 유무 검사
             if (result.ids != null && result.ids.Length > 0 && result.tvec != null && result.rvec != null)
             {
-                // 마커 정보용 객체 생성해 정보 담아 메인 스레드로 넘기기
-                var resultInstance = new MarkerDetectionResult
+                // 마커 정보용 객체 리스트 생성해 정보 담아 메인 스레드로 넘기기
+                var resultInstance = new List<MarkerDetectionResult>(result.ids.Length);
+                for(int i = 0; i < result.ids.Length; i++)
                 {
-                    ids = result.ids, 
-                    tvec = result.tvec, 
-                    rvec = result.rvec, 
-                    cameraPosition = cameraPosition, 
-                    cameraRotation = cameraRotation
-                };
+                    if (i == 0)
+                    {
+                        // 첫번째 값에 카메라 정보도 담기
+                        resultInstance.Add(new MarkerDetectionResult{id = result.ids[i], tvec = result.tvec[i], rvec = result.rvec[i], cameraPosition = cameraPosition, cameraRotation = cameraRotation});
+                    }
+                    resultInstance.Add(new MarkerDetectionResult{id = result.ids[i], tvec = result.tvec[i], rvec = result.rvec[i]});
+                }
+                
                 lock (resultLock)
                 {
                     markerDetectionResult = resultInstance;

@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class MarkerDetectionResult
 {
-    public int[] ids;
+    public int id;
     public double[] tvec;
     public double[] rvec;
 

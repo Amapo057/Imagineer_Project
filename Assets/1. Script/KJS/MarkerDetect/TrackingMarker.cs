@@ -1,5 +1,6 @@
 using UnityEngine;
 using OpenCvSharp;
+using System.Collections.Generic;
 
 public class TrackingMarker : MonoBehaviour
 {
@@ -20,6 +21,8 @@ public class TrackingMarker : MonoBehaviour
     // 앵커 월드기준 위치 저장용 변수
     private Vector3 worldPosition = Vector3.zero;
     private Quaternion worldRotation = Quaternion.identity;
+    private Vector3 cameraPosition;
+    private Quaternion cameraRotation;
     
     // 데드존용 좌표 변수
     private Vector3 deadZonePosition;
@@ -29,25 +32,45 @@ public class TrackingMarker : MonoBehaviour
     // 손 속도 보간용 변수
     // 손 속도 최소, 최대 기준
     private float minHandSpeed = 0.003f;
-    private float maxHandSpeed = 1f;
+    private float maxHandSpeed = 0.8f;
     // 따라갈 속도 최대 최소 비율
     private float minFollowSpeed = 2f;
-    private float maxFollowSpeed = 80f;
+    private float maxFollowSpeed = 90f;
 
     // 이동 여부 변수
     private bool isHandMove = false;
     private bool isCardMove = false;
     private float maxSpeed = 0f;
 
+    // 이번 마커들 저장용 리스트
+    List<MarkerPositionResult> markerPositionResults;
 
+    // 목표 id
+    int targetId = 4;
 
     void Update()
     {
         if(markerDetecter.TryGetMarkerResult(out var result))
         {
-            debugText1.text = $"ID: {string.Join("\n", result.ids)}";
-            LocalToWroldPos(result);
-            
+            markerPositionResults = new List<MarkerPositionResult>(result.Count);
+
+            for(int i = 0; i < result.Count; i++)
+            {
+                if(i == 0)
+                {
+                    cameraPosition = result[i].cameraPosition;
+                    cameraRotation = result[i].cameraRotation;
+                }
+                (var markerWorldPosition, var markerWorldRotation) = LocalToWroldPos(result[i]);
+
+                markerPositionResults.Add(new MarkerPositionResult{id = result[i].id, worldPosition = markerWorldPosition, worldRotation = markerWorldRotation});
+            }
+            var targetMarker = markerPositionResults.Find(marker => marker.id == targetId);
+            if (targetMarker != null)
+            {
+                worldPosition = targetMarker.worldPosition;
+                worldRotation = targetMarker.worldRotation;
+            }
         }
         // 손 속도를 활용해 보간값으로 활용
         float followSpeed = GetCardFollowSpeed(handManager.GetHandSpeed());
@@ -62,7 +85,7 @@ public class TrackingMarker : MonoBehaviour
         float cardToMarkerAngle = Quaternion.Angle(markerAnchor.transform.rotation, worldRotation);
         if(isCardMove && !isHandMove)
         {
-            if (cardToMarkerDistance > 0.02f || cardToMarkerAngle > 10f)
+            if (cardToMarkerDistance > 0.01f || cardToMarkerAngle > 7f)
             {
                 followSpeed = maxSpeed;
             }
@@ -87,13 +110,13 @@ public class TrackingMarker : MonoBehaviour
             markerAnchor.transform.rotation = Quaternion.Slerp(markerAnchor.transform.rotation, worldRotation, t);
         }
     }
-    private void LocalToWroldPos(MarkerDetectionResult result)
+    private (Vector3 worldPosition, Quaternion worldRotation) LocalToWroldPos(MarkerDetectionResult result)
     {
         // --- 좌표 ---
         // opencv좌표계에서 유니티 좌표계로 변경하기 위해 y축 반전
         Vector3 yInversionPos = new Vector3((float)result.tvec[0], -(float)result.tvec[1], (float)result.tvec[2]);
         // 카메라 위치 + 회전을 반영한 상대위치로 월드위치 계산
-        worldPosition = result.cameraPosition + result.cameraRotation * yInversionPos;
+        Vector3 worldPosition = cameraPosition + cameraRotation * yInversionPos;
 
         // --- 회전 ---
         using Mat rvecMat = new Mat(3, 1, MatType.CV_64FC1);
@@ -133,7 +156,9 @@ public class TrackingMarker : MonoBehaviour
         Quaternion markerOffset = Quaternion.Euler(0f, 0f, 135f);
 
         // 최종 회전
-        worldRotation = cameraWorldRotation * markerOffset;
+        Quaternion worldRotation = cameraWorldRotation * markerOffset;
+
+        return (worldPosition, worldRotation);
     }
 
     private (bool applyPosition, bool applyRotation) DeadZoneLimit()
