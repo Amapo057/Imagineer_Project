@@ -32,16 +32,30 @@ public class DrawManager : MonoBehaviour
         }
     }
 
-    // 버튼 누르면 손패 맨 뒤(현재 카드 수만큼 뒤) 자리에 카드 한 장 추가
-    public void OnDrawButtonClick()
+    // 버튼(혹은 드로우 키워드)으로 카드를 뽑았을 때 호출. 손패 맨 뒤(현재 카드 수만큼 뒤) 자리에
+    // 카드 한 장을 실제로 띄우고, 그 카드가 어떤 CardData인지 CardView에 넘겨서 이름/코스트/
+    // 공격력/체력/능력 텍스트가 진짜 값으로 채워지도록 함(예전엔 이 정보가 아예 없어서 프리팹에
+    // 박아둔 플레이스홀더 숫자만 보였음).
+    //
+    // data는 GameManager 쪽에서 실제로 덱에서 뽑힌 카드를 그대로 넘겨받는 것 — 이 메서드는
+    // 순수하게 "그 카드를 화면에 보여주는" 비주얼 담당이고, 뽑을지 말지(덱이 비었는지, 손패가
+    // 꽉 찼는지) 판단은 GameManager.TryDrawCard가 이미 끝낸 뒤에 호출됨
+    public void OnDrawButtonClick(CardData data)
     {
-        // 손패 꽉 찼으면 안 뽑기
-        if (handCards.Count >= slotPositions.Length)
+        // 손패 꽉 찼으면 안 뽑기. 씬에 배치된 손패 슬롯 개수(slotPositions.Length)와 디자인 규칙상
+        // 손패 최대 장수(GameRules.MaxHandSize) 중 더 작은 쪽을 진짜 한도로 씀 — 씬에 슬롯이
+        // 실수로 더 많이/적게 있어도 항상 안전하게 동작하도록
+        int effectiveLimit = Mathf.Min(slotPositions.Length, GameRules.MaxHandSize);
+        if (handCards.Count >= effectiveLimit)
         {
             return;
         }
 
         GameObject card = Instantiate(cardPrefabs, transform.position, Quaternion.identity);
+
+        var view = card.GetComponent<CardView>();
+        if (view != null) view.SetCardData(data);
+
         handCards.Add(card.transform);
 
         Vector3 targetPosition = slotPositions[handCards.Count - 1].position;

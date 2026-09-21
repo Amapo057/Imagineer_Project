@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // 카드의 특수 능력(키워드). 카드 하나가 여러 개를 동시에 가질 수 있어서 Flags로 선언.
@@ -12,6 +13,14 @@ public enum CardKeyword
     Draw         = 1 << 3, // 드로우
     SelfDestruct = 1 << 4, // 자폭
     Cleave       = 1 << 5, // 휘둘기
+    Weapon       = 1 << 6, // 무기 — 등장 시(전투의함성) 플레이어가 지정한 적 하수인에게 공격력만큼 피해
+    FrontDamage  = 1 << 7, // 앞의 적 피해 — 등장 시(전투의함성) 정면 라인의 적 하수인에게 공격력만큼 피해
+
+    // 아래 둘은 마법 카드 전용 키워드. Draw는 유닛 쪽과 완전히 같은 뜻(카드 1장 뽑기)이라 플래그를
+    // 재사용하지만, Heal은 마법에서는 뜻이 다름 — "왼쪽 아군 회복"이 아니라 "명치가 맞은 횟수를 1
+    // 줄임"으로 처리됨(DemoTurnController.ResolveSpellEffect 참고, 카드타입으로 이미 분기되므로 안전함)
+    Remove       = 1 << 8, // 제거 — 마법 전용. 지정한 적 하수인에게 고정 피해(GameRules.RemoveSpellDamage)
+    Buff         = 1 << 9, // 강화 — 마법 전용. 이번 턴이 끝날 때까지 아군 하수인 전체 공격력 증가(GameRules.BuffSpellAttackBonus)
 }
 
 // 카드 종류. 유닛은 4라인에, 마법은 별도의 spellSlot에 놓임 (PlayerBoardState 참고)
@@ -71,6 +80,27 @@ public class CardData : ScriptableObject
     // 이 카드가 특정 키워드를 가지고 있는지 확인.
     // 사용 예: if (card.HasKeyword(CardKeyword.Counter)) { ... }
     public bool HasKeyword(CardKeyword keyword) => (keywords & keyword) != 0;
+
+    // 카드가 가진 키워드를 한글 이름으로 보여주는 문자열(카드 비주얼 표시용, CardView 참고).
+    // 여러 개 있으면 쉼표로 구분, 키워드가 하나도 없는 "바닐라" 카드면 빈 문자열을 돌려줌
+    public string KeywordLabel
+    {
+        get
+        {
+            var names = new List<string>();
+            if (HasKeyword(CardKeyword.Draw)) names.Add("드로우");
+            if (HasKeyword(CardKeyword.Counter)) names.Add("반격");
+            if (HasKeyword(CardKeyword.Heal)) names.Add("회복");
+            if (HasKeyword(CardKeyword.Weapon)) names.Add("무기");
+            if (HasKeyword(CardKeyword.FrontDamage)) names.Add("앞의 적 피해");
+            if (HasKeyword(CardKeyword.Remove)) names.Add("제거");
+            if (HasKeyword(CardKeyword.Buff)) names.Add("강화");
+            if (HasKeyword(CardKeyword.Battlecry)) names.Add("전투의 함성");
+            if (HasKeyword(CardKeyword.SelfDestruct)) names.Add("자폭");
+            if (HasKeyword(CardKeyword.Cleave)) names.Add("휘둘기");
+            return string.Join(", ", names);
+        }
+    }
 
     private static string ToRoman(int number)
     {

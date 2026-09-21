@@ -18,10 +18,14 @@ using UnityEngine;
 /// cardType 칸은 Unit 또는 Spell (한글 "유닛"/"마법"도 인식됨). 비어있으면 Unit으로 처리.
 ///
 /// keywords 칸은 세미콜론(;)으로 여러 개 구분. 한글/영문 둘 다 인식됨:
-/// 반격/Counter, 회복/Heal, 전투의함성/Battlecry, 드로우/Draw, 자폭/SelfDestruct, 휘둘기/Cleave
+/// 반격/Counter, 회복/Heal, 전투의함성/Battlecry, 드로우/Draw, 자폭/SelfDestruct, 휘둘기/Cleave,
+/// 무기/Weapon, 앞의 적 피해/FrontDamage, 제거/Remove, 강화/Buff
 /// 예: "반격;회복" 또는 "Counter;Heal" (능력 없으면 빈 칸)
 ///
 /// 이미 존재하는 카드(같은 cardId)는 수치만 덮어쓰고, 새 cardId는 새 에셋으로 생성함.
+/// CSV에 아예 없는 cardId(폴더에만 남아있는 카드)는 더 이상 쓰지 않는 카드로 보고 에셋 자체를
+/// 지움 — CSV가 "지금 카드 풀의 정답"이라고 보고 완전히 동기화함(카드 27종으로 확정된 뒤로
+/// 예전 테스트용 더미 카드가 안 지워지고 계속 남아있던 문제를 막기 위함).
 /// </summary>
 public static class CardCsvImporter
 {
@@ -36,6 +40,10 @@ public static class CardCsvImporter
         { "드로우", CardKeyword.Draw },          { "draw", CardKeyword.Draw },
         { "자폭", CardKeyword.SelfDestruct },    { "selfdestruct", CardKeyword.SelfDestruct },
         { "휘둘기", CardKeyword.Cleave },        { "cleave", CardKeyword.Cleave },
+        { "무기", CardKeyword.Weapon },          { "weapon", CardKeyword.Weapon },
+        { "앞의 적 피해", CardKeyword.FrontDamage }, { "앞의적피해", CardKeyword.FrontDamage }, { "frontdamage", CardKeyword.FrontDamage },
+        { "제거", CardKeyword.Remove },          { "remove", CardKeyword.Remove },
+        { "강화", CardKeyword.Buff },            { "buff", CardKeyword.Buff },
     };
 
     [MenuItem("CardGame/CSV로 카드 데이터 가져오기")]
@@ -132,9 +140,22 @@ public static class CardCsvImporter
             }
         }
 
+        // CSV에 없는 cardId는 더 이상 쓰지 않는 카드로 보고 에셋을 지움(동기화).
+        // existing은 LoadExistingCardsById에서 폴더를 통째로 스캔해 만든 목록이라, 방금 CSV에서
+        // 안 나온(=seenIds에 없는) id는 전부 "폴더에만 남은 옛날 카드"임
+        int removedIds = 0;
+        foreach (var kvp in existing)
+        {
+            if (seenIds.Contains(kvp.Key)) continue;
+
+            string assetPath = AssetDatabase.GetAssetPath(kvp.Value);
+            if (AssetDatabase.DeleteAsset(assetPath)) removedIds++;
+        }
+
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log($"[CardCsvImporter] 완료 — 새로 생성 {created}장, 기존 갱신 {updated}장 (cardClass / hologramPrefab은 건드리지 않음)");
+        Debug.Log($"[CardCsvImporter] 완료 — 새로 생성 {created}장, 기존 갱신 {updated}장, CSV에 없어서 삭제 {removedIds}장 " +
+                  "(cardClass / hologramPrefab은 건드리지 않음)");
     }
 
     private static CardType ParseCardType(string[] row, int idx)

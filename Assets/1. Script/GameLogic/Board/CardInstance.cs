@@ -19,6 +19,12 @@ public class CardInstance
     // 이번 턴에 이미 공격했는지 여부
     public bool hasAttackedThisTurn;
 
+    // 마법 "강화"로 지금 currentAttack에 얼마나 임시로 더해져 있는지 기억해두는 값.
+    // "이번 턴이 끝날 때까지"만 유지되는 버프라, 전투 페이즈가 끝나면 이 값만큼 currentAttack에서
+    // 다시 빼고 0으로 되돌림(GameManager.HandleCombat 참고) — 나중에 다른 임시 버프가 추가돼도
+    // 여러 개가 섞여도 되도록 "합"으로 관리함
+    public int tempAttackBonus;
+
     // 어느 편 카드인지
     public PlayerSide owner;
 
@@ -29,6 +35,7 @@ public class CardInstance
         currentAttack = data.attack;
         currentHealth = data.health;
         hasAttackedThisTurn = false;
+        tempAttackBonus = 0;
     }
 
     // 살아있는지 확인 (체력 0 이하면 죽은 것으로 취급)

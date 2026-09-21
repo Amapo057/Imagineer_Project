@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: 04_D
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   cardId: 4
-  cardName: D
+  cardName: "\uACF5\uC6A9-4"
   cardType: 0
   cardClass: {fileID: 0}
-  description: 
+  description: "\uACF5\uACA9\uC744 \uBC1B\uC73C\uBA74 \uACF5\uACA9\uB825(2)\uB9CC\uD07C
+    \uC0C1\uB300\uC5D0\uAC8C\uB3C4 \uD53C\uD574\uB97C \uC90D\uB2C8\uB2E4"
   cost: 2
   attack: 2
-  health: 3
-  keywords: 0
+  health: 2
+  keywords: 1
   hologramPrefab: {fileID: 0}

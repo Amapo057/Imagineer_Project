@@ -43,9 +43,11 @@ public class CardMove : MonoBehaviour
                     if (demoTurnController != null)
                     {
                         // 필드 슬롯 위가 아니면(그냥 바닥이면) 낼 수 없음 — 카드는 반드시 필드 자리에 내야
-                        // 코스트를 쓰고 실제 하수인으로 등록됨
+                        // 코스트를 쓰고 실제로 등록됨(유닛이면 하수인으로, 마법이면 바로 효과 발동).
+                        // 마법 카드는 라인 점유 여부와 무관하게 처리되므로 슬롯은 "내 필드 위"라는
+                        // 표시로만 쓰이고, 어느 라인을 클릭했는지는 안 따짐(TryPlayCard 참고)
                         FieldSlot slot = FindFieldSlot(pos);
-                        canPlace = slot != null && demoTurnController.TryPlaceMinion(slot, selectedCard.gameObject);
+                        canPlace = slot != null && demoTurnController.TryPlayCard(slot, selectedCard.gameObject);
                     }
                     else
                     {
