@@ -76,6 +76,11 @@ public class CardData : ScriptableObject
     [Tooltip("VR에서 이 카드 위치에 띄울 홀로그램 프리팹")]
     public GameObject hologramPrefab;
 
+    [Tooltip("'자세히 보기' 상태에서 카드 위에 크게 띄울 일러스트. 아직 카드 일러스트 자체가 " +
+             "미정이라(디자인 확정 전) 지금은 27장 전부 비어있음 — hologramPrefab과 동일하게, " +
+             "비어있으면 CardView.SetDetailMode가 조용히 무시하고 아무 일도 안 함")]
+    public Sprite illustration;
+
     // 코스트를 로마 숫자 문자열로 변환해서 반환 (UI 표시용).
     // 예: cost = 3 이면 "III" 반환.
     public string CostAsRoman => ToRoman(cost);
