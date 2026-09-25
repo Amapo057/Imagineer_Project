@@ -4,7 +4,6 @@ using OpenCvSharp;
 using OpenCvSharp.Aruco;
 using System.Threading;
 using System.Collections.Generic;
-using System.Data.Common;
 
 public class MarkerDetecter : MonoBehaviour
 {
@@ -186,6 +185,8 @@ public class MarkerDetecter : MonoBehaviour
         {
             for(int i = 0; i < ids.Length; i++)
             {
+                // 중앙앵커 마커 크기 변경할거면 나중에 추가
+                // if(ids[i] == middleAnchorMarkerID)
                 // 이차원 배열이라 내부 배열 따로 크기 할당
                 tvec[i] = new double[3];
                 rvec[i] = new double[3];

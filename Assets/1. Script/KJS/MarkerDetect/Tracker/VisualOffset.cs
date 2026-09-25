@@ -13,8 +13,13 @@ public class VisualOffset : MonoBehaviour
         
     }
 
+    // 인자가 없이 호출을 위한 오버로드
+    public void OffsetAdjustment()
+    {
+        OffsetAdjustment(positionOffset, rotationOffset);
+    }
     // 지정한 오프셋만큼 위치 이동
-    void OffsetAdjustment(Vector3 posOffset, Vector3 rotOffset)
+    public void OffsetAdjustment(Vector3 posOffset, Vector3 rotOffset)
     {
         Quaternion rotationQ = Quaternion.Euler(rotOffset);
         

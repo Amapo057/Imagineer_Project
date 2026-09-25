@@ -67,6 +67,6 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "project Card.slnx",
+    "dotnet.defaultSolution": "ImagineerProject.slnx",
     "dotnet.enableWorkspaceBasedDevelopment": false
 }

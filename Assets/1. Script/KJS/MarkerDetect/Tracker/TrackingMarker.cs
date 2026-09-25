@@ -5,7 +5,7 @@ using System.Collections.Generic;
 public class TrackingMarker : MonoBehaviour
 {
     // 디버깅용 텍스트 ui
-    [SerializeField] private TMPro.TextMeshProUGUI debugText1;
+    // [SerializeField] private TMPro.TextMeshProUGUI debugText1;
     [SerializeField] private TMPro.TextMeshProUGUI debugText2;
     [SerializeField] private TMPro.TextMeshProUGUI debugText3;
     // 움직일 모델 앵커
@@ -43,29 +43,39 @@ public class TrackingMarker : MonoBehaviour
     private float maxSpeed = 0f;
 
     // 이번 마커들 저장용 리스트
-    List<MarkerPositionResult> markerPositionResults;
+    private List<MarkerPositionResult> markerPositionResults;
+
+    // 새 마커 리스트 생성 여부
+    private bool isNewMarkerList = false;
 
     // 목표 id
-    int targetId = 4;
+    [SerializeField] private int targetId = 9;
 
     void Update()
     {
         if(markerDetecter.TryGetMarkerResult(out var result))
         {
+            // 마커들 저장용 리스트 초기화
             markerPositionResults = new List<MarkerPositionResult>(result.Count);
 
+            // 마커 결과 리스트 순회하며 월드 좌표계로 변환 후 저장
             for(int i = 0; i < result.Count; i++)
             {
+                // 첫번째 결과에서 카메라 좌표와 회전값을 가져와 저장
                 if(i == 0)
                 {
                     cameraPosition = result[i].cameraPosition;
                     cameraRotation = result[i].cameraRotation;
                 }
+                // 좌표계 변환 함수로 월드 좌표계로 변환
                 (var markerWorldPosition, var markerWorldRotation) = LocalToWroldPos(result[i]);
 
+                // 변환한 좌표를 id와 함께 리스트에 저장
                 markerPositionResults.Add(new MarkerPositionResult{id = result[i].id, worldPosition = markerWorldPosition, worldRotation = markerWorldRotation});
             }
+            // 목표 id와 일치하는 마커를 찾아 저장
             var targetMarker = markerPositionResults.Find(marker => marker.id == targetId);
+            // 목표 마커가 있다면 월드 좌표와 회전값을 저장
             if (targetMarker != null)
             {
                 worldPosition = targetMarker.worldPosition;
@@ -214,5 +224,21 @@ public class TrackingMarker : MonoBehaviour
         }
         // 앞서 나온 0~1값으로 최소, 최대 사이 비율을 맞춰 값 반환
         return Mathf.Lerp(minFollowSpeed, maxFollowSpeed, t);
+    }
+
+    public bool TryGetTargetMarkerResult(int targetId, out MarkerPositionResult markerPositionResults)
+    {
+        var targetMarker = this.markerPositionResults.Find(marker => marker.id == targetId);
+        if (this.markerPositionResults != null && this.markerPositionResults.Count > 0 && targetMarker != null)
+        {
+            markerPositionResults = targetMarker;
+            return true;
+        }
+        else
+        {
+            markerPositionResults = null;
+            return false;
+        }
+        
     }
 }

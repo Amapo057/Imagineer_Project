@@ -69,7 +69,7 @@ public class HandManager : MonoBehaviour
         float wristMeasuredSpeed = Vector3.Distance(previousWristPosition, currentWristPosition) / Time.deltaTime;
         wristSpeed = Mathf.Lerp(wristSpeed, wristMeasuredSpeed, t);
 
-        debug4.text = $"Thumb Speed: {thumbSpeed}\nWrist Speed: {wristSpeed}";
+        // debug4.text = $"Thumb Speed: {thumbSpeed}\nWrist Speed: {wristSpeed}";
 
         // 이전 위치 적용
         previousThumbPosition = currentThumbPosition;
