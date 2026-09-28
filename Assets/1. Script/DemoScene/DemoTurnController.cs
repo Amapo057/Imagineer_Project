@@ -236,7 +236,7 @@ public class DemoTurnController : MonoBehaviour
 
         board.currentCost -= playedCard.cost;
         slot.occupyingCard = cardVisual;
-        SpawnHologram(playedCard, cardVisual);
+        SpawnHologram(playedCard, slot, cardVisual);
 
         NotifyHandCardRemoved(cardVisual);
         ResolveBattlecry(playedCard, minion, slot);
@@ -249,12 +249,58 @@ public class DemoTurnController : MonoBehaviour
     // 아무 데서도 안 쓰여서(CardView는 텍스트만 채움) 유닛을 필드에 내도 모델이 안 나왔음.
     // cardVisual의 자식으로 붙여서, 나중에 이 카드가 죽어서 cardVisual이 Destroy될 때
     // (SyncDeadMinions 참고) 따로 안 치워줘도 자식째로 같이 파괴되도록 함.
-    // hologramPrefab이 비어있는 카드(지금 27장 전부 미배정 상태)는 그냥 조용히 아무 일도 안 함
-    private void SpawnHologram(CardData playedCard, GameObject cardVisual)
+    //
+    // 회전은 cardVisual.transform.rotation이 아니라 slot.transform.rotation을 씀 — CardMove가 카드를
+    // 내려놓을 때 위치(position)만 옮기고 회전은 손패에 있을 때 값 그대로 두므로, cardVisual의 회전을
+    // 그대로 베끼면 "라인 방향"과 무관한 값이 나옴. 필드 슬롯 오브젝트 자신의 회전(씬에 배치된 방향)을
+    // 쓰는 게 실제 라인 방향과 맞음.
+    //
+    // hologramPrefab이 배정된 카드는 그걸 그대로 띄우고, 아직 배정 안 된 카드(지금 27장 전부 이 상태)는
+    // 모델 나오기 전까지 배치/방향/제거 연동을 눈으로 확인할 수 있게 임시 캡슐로 대신 띄워둠. 나중에
+    // hologramPrefab이 채워지면 이 분기는 자동으로 안 타게 되니 지울 필요 없음
+    private void SpawnHologram(CardData playedCard, FieldSlot slot, GameObject cardVisual)
     {
-        if (playedCard.hologramPrefab == null || cardVisual == null) return;
+        if (cardVisual == null || slot == null) return;
 
-        Instantiate(playedCard.hologramPrefab, cardVisual.transform.position, cardVisual.transform.rotation, cardVisual.transform);
+        if (playedCard.hologramPrefab != null)
+        {
+            Instantiate(playedCard.hologramPrefab, cardVisual.transform.position, slot.transform.rotation, cardVisual.transform);
+            return;
+        }
+
+        SpawnPlaceholderHologram(playedCard, slot, cardVisual);
+    }
+
+    // hologramPrefab이 아직 없는 카드용 임시 비주얼(캡슐 하나). 실제 3D 모델을 대신하는 디버깅용이라
+    // 진영(유닛/마법)별로 색만 다르게 줌. 콜라이더는 필드 슬롯 판정(CardMove.FindFieldSlot의
+    // OverlapSphere)에 불필요하게 끼어들 수 있어서 바로 제거함
+    private void SpawnPlaceholderHologram(CardData playedCard, FieldSlot slot, GameObject cardVisual)
+    {
+        GameObject placeholder = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        placeholder.name = $"[임시모델] {playedCard.cardName}";
+
+        placeholder.transform.SetParent(cardVisual.transform, worldPositionStays: false);
+        placeholder.transform.position = cardVisual.transform.position;
+        placeholder.transform.rotation = slot.transform.rotation;
+
+        // cardVisual(카드 프리팹)이 축마다 눌려있어서(찌그러짐 이슈, 이전에 발견된 문제) 자식 스케일을
+        // 부모 스케일의 역수로 보정해야 실제로는 일정한 크기로 보임. 실제 hologramPrefab 쪽은 프리팹
+        // 자체 스케일로 이미 보정돼 있지만, 이 캡슐은 코드로 새로 만드는 거라 여기서 직접 보정함
+        Vector3 parentScale = cardVisual.transform.lossyScale;
+        const float desiredSize = 0.15f; // 필드 한 칸 기준 임시값 — 실제 모델 나오면 이 크기감은 의미 없어짐
+        placeholder.transform.localScale = new Vector3(
+            desiredSize / Mathf.Max(parentScale.x, 0.0001f),
+            desiredSize / Mathf.Max(parentScale.y, 0.0001f),
+            desiredSize / Mathf.Max(parentScale.z, 0.0001f));
+
+        var renderer = placeholder.GetComponent<Renderer>();
+        if (renderer != null)
+        {
+            renderer.material.color = playedCard.cardType == CardType.Spell ? Color.cyan : Color.gray;
+        }
+
+        var collider = placeholder.GetComponent<Collider>();
+        if (collider != null) Destroy(collider);
     }
 
     // 마법 카드를 시전. 라인 개념이 없어서 바로 손패에서 빼고 코스트를 쓴 뒤 효과를 발동함.
