@@ -4,13 +4,13 @@ public class StartInit : MonoBehaviour
 {
     [SerializeField] private TMPro.TextMeshProUGUI debug1;
     [SerializeField] private TMPro.TextMeshProUGUI debug3;
-    [SerializeField] private TrackingMarker trackingMarker;
+    [SerializeField] private MarkerWorldPos markerWorldPos;
     [SerializeField] private AnchorManager anchorManager;
 
     // 앵커 생성 여부
     private bool isMiddleAnchor = false;
     // 앵커 기준 id
-    private int middleAnchorId = 9;
+    private int middleAnchorId = 0;
 
     // 앵커 생성용 보간 좌표
     private Vector3 lerpPosition;
@@ -35,7 +35,7 @@ public class StartInit : MonoBehaviour
         debug3.text = $"anchorTime: {anchorReadyTime}";
         if (!isMiddleAnchor)
         {
-            if(trackingMarker.TryGetTargetMarkerResult(middleAnchorId, out var markerPositionResult))
+            if(markerWorldPos.TryGetTargetMarkerResult(middleAnchorId, out var markerPositionResult))
             {
                 Vector3 newPosition = markerPositionResult.worldPosition;
                 Quaternion newRotation = markerPositionResult.worldRotation;

@@ -1,19 +1,11 @@
 using UnityEngine;
-using OpenCvSharp;
-using System.Collections.Generic;
 
 public class TrackingMarker : MonoBehaviour
 {
-    // 디버깅용 텍스트 ui
-    // [SerializeField] private TMPro.TextMeshProUGUI debugText1;
-    [SerializeField] private TMPro.TextMeshProUGUI debugText2;
-    [SerializeField] private TMPro.TextMeshProUGUI debugText3;
-    // 움직일 모델 앵커
-    [SerializeField] private GameObject markerAnchor;
-    // 탐지 코드 연결
-    [SerializeField] private MarkerDetecter markerDetecter;
     // 손 속도 측정 코드
     [SerializeField] private HandManager handManager;
+    // 마커 월드 좌표 생성 코드 받기
+    [SerializeField] private MarkerWorldPos markerWorldPos;
     // 데드존 설정값
     private float positionDeadZone = 0.001f;
     private float rotationDeadZone = 1.0f;
@@ -21,8 +13,6 @@ public class TrackingMarker : MonoBehaviour
     // 앵커 월드기준 위치 저장용 변수
     private Vector3 worldPosition = Vector3.zero;
     private Quaternion worldRotation = Quaternion.identity;
-    private Vector3 cameraPosition;
-    private Quaternion cameraRotation;
     
     // 데드존용 좌표 변수
     private Vector3 deadZonePosition;
@@ -42,135 +32,66 @@ public class TrackingMarker : MonoBehaviour
     private bool isCardMove = false;
     private float maxSpeed = 0f;
 
-    // 이번 마커들 저장용 리스트
-    private List<MarkerPositionResult> markerPositionResults;
-
-    // 새 마커 리스트 생성 여부
-    private bool isNewMarkerList = false;
-
     // 목표 id
-    [SerializeField] private int targetId = 9;
+    private int targetId = 0;
+
+    // 자세히보기 설정
+    private bool isDetaile = false;
 
     void Update()
     {
-        if(markerDetecter.TryGetMarkerResult(out var result))
+        // 목표 id와 일치하는 마커를 찾아 저장
+        if(markerWorldPos.TryGetTargetMarkerResult(targetId, out var targetMarker))
         {
-            // 마커들 저장용 리스트 초기화
-            markerPositionResults = new List<MarkerPositionResult>(result.Count);
-
-            // 마커 결과 리스트 순회하며 월드 좌표계로 변환 후 저장
-            for(int i = 0; i < result.Count; i++)
+            worldPosition = targetMarker.worldPosition;
+            worldRotation = targetMarker.worldRotation;
+        }
+        if (isDetaile)
+        {
+            // 손 속도를 활용해 보간값으로 활용
+            float followSpeed = GetCardFollowSpeed(handManager.GetHandSpeed());
+            // 손이 이동중이면 속도 기록
+            if (isHandMove)
             {
-                // 첫번째 결과에서 카메라 좌표와 회전값을 가져와 저장
-                if(i == 0)
+                isCardMove = true;
+                maxSpeed = Mathf.Max(maxSpeed, followSpeed);
+            }
+            // 현재 카드와 앵커의 거리와 각도를 비교해 2cm이상 또는 10도 이상 차이이면 이전의 최대속도로 이동
+            float cardToMarkerDistance = Vector3.Distance(transform.position, worldPosition);
+            float cardToMarkerAngle = Quaternion.Angle(transform.rotation, worldRotation);
+            if(isCardMove && !isHandMove)
+            {
+                if (cardToMarkerDistance > 0.01f || cardToMarkerAngle > 7f)
                 {
-                    cameraPosition = result[i].cameraPosition;
-                    cameraRotation = result[i].cameraRotation;
+                    followSpeed = maxSpeed;
                 }
-                // 좌표계 변환 함수로 월드 좌표계로 변환
-                (var markerWorldPosition, var markerWorldRotation) = LocalToWroldPos(result[i]);
+                else
+                {
+                    isCardMove = false;
+                    maxSpeed = 0f;
+                }
+            }
+            // 적용한 속도를 사용해 보간에 사용할 값으로 변환
+            float t = 1f - Mathf.Exp(-followSpeed * Time.deltaTime);
 
-                // 변환한 좌표를 id와 함께 리스트에 저장
-                markerPositionResults.Add(new MarkerPositionResult{id = result[i].id, worldPosition = markerWorldPosition, worldRotation = markerWorldRotation});
-            }
-            // 목표 id와 일치하는 마커를 찾아 저장
-            var targetMarker = markerPositionResults.Find(marker => marker.id == targetId);
-            // 목표 마커가 있다면 월드 좌표와 회전값을 저장
-            if (targetMarker != null)
+            // 이동 여부 판정 함수로 이동여부 bool 받기
+            var (applyPosition, applyRotation) = DeadZoneLimit();
+            if (applyPosition)
             {
-                worldPosition = targetMarker.worldPosition;
-                worldRotation = targetMarker.worldRotation;
+                // 보간으로 부드럽게 움직이도록 구성
+                transform.position = Vector3.Lerp(transform.position, worldPosition, t);
             }
-        }
-        // 손 속도를 활용해 보간값으로 활용
-        float followSpeed = GetCardFollowSpeed(handManager.GetHandSpeed());
-        // 손이 이동중이면 속도 기록
-        if (isHandMove)
-        {
-            isCardMove = true;
-            maxSpeed = Mathf.Max(maxSpeed, followSpeed);
-        }
-        // 현재 카드와 앵커의 거리와 각도를 비교해 2cm이상 또는 10도 이상 차이이면 이전의 최대속도로 이동
-        float cardToMarkerDistance = Vector3.Distance(markerAnchor.transform.position, worldPosition);
-        float cardToMarkerAngle = Quaternion.Angle(markerAnchor.transform.rotation, worldRotation);
-        if(isCardMove && !isHandMove)
-        {
-            if (cardToMarkerDistance > 0.01f || cardToMarkerAngle > 7f)
+            if (applyRotation)
             {
-                followSpeed = maxSpeed;
-            }
-            else
-            {
-                isCardMove = false;
-                maxSpeed = 0f;
+                transform.rotation = Quaternion.Slerp(transform.rotation, worldRotation, t);
             }
         }
-        // 적용한 속도를 사용해 보간에 사용할 값으로 변환
-        float t = 1f - Mathf.Exp(-followSpeed * Time.deltaTime);
-
-        // 이동 여부 판정 함수로 이동여부 bool 받기
-        var (applyPosition, applyRotation) = DeadZoneLimit();
-        if (applyPosition)
+        else
         {
-            // 보간으로 부드럽게 움직이도록 구성
-            markerAnchor.transform.position = Vector3.Lerp(markerAnchor.transform.position, worldPosition, t);
-        }
-        if (applyRotation)
-        {
-            markerAnchor.transform.rotation = Quaternion.Slerp(markerAnchor.transform.rotation, worldRotation, t);
+            transform.position = worldPosition;
+            transform.rotation = worldRotation;
         }
     }
-    private (Vector3 worldPosition, Quaternion worldRotation) LocalToWroldPos(MarkerDetectionResult result)
-    {
-        // --- 좌표 ---
-        // opencv좌표계에서 유니티 좌표계로 변경하기 위해 y축 반전
-        Vector3 yInversionPos = new Vector3((float)result.tvec[0], -(float)result.tvec[1], (float)result.tvec[2]);
-        // 카메라 위치 + 회전을 반영한 상대위치로 월드위치 계산
-        Vector3 worldPosition = cameraPosition + cameraRotation * yInversionPos;
-
-        // --- 회전 ---
-        using Mat rvecMat = new Mat(3, 1, MatType.CV_64FC1);
-
-        rvecMat.Set(0, 0, result.rvec[0]);
-        rvecMat.Set(1, 0, result.rvec[1]);
-        rvecMat.Set(2, 0, result.rvec[2]);
-
-        using Mat rotationMatrix = new Mat();
-        Cv2.Rodrigues(rvecMat, rotationMatrix);
-
-        // quaternion용 44행렬 생성
-        Matrix4x4 m = Matrix4x4.identity;
-
-        // 매트릭스의 행렬 지정후 가져올 매트릭스의 타입과 행렬 지정해 가져와 float으로 형변환
-        m.m00 = (float)rotationMatrix.At<double>(0, 0);
-        m.m01 = (float)rotationMatrix.At<double>(0, 1);
-        m.m02 = (float)rotationMatrix.At<double>(0, 2);
-
-        m.m10 = (float)rotationMatrix.At<double>(1, 0);
-        m.m11 = (float)rotationMatrix.At<double>(1, 1);
-        m.m12 = (float)rotationMatrix.At<double>(1, 2);
-
-        m.m20 = (float)rotationMatrix.At<double>(2, 0);
-        m.m21 = (float)rotationMatrix.At<double>(2, 1);
-        m.m22 = (float)rotationMatrix.At<double>(2, 2);
-
-        Matrix4x4 flipY = Matrix4x4.Scale(new Vector3(1f, -1f, 1f));
-
-        // opencv와 유니티 회전의 방향차이를 맞추기 위해 S * R * S로 좌표계 변환
-        m = flipY * m * flipY;
-
-        // 카메라의 월드 회전까지 곱해줘 회전 맞추기
-        Quaternion cameraWorldRotation = result.cameraRotation * m.rotation;
-
-        // 마커 회전인 135도 보정
-        Quaternion markerOffset = Quaternion.Euler(0f, 0f, 135f);
-
-        // 최종 회전
-        Quaternion worldRotation = cameraWorldRotation * markerOffset;
-
-        return (worldPosition, worldRotation);
-    }
-
     private (bool applyPosition, bool applyRotation) DeadZoneLimit()
     {
         bool applyPosition = true;
@@ -225,20 +146,19 @@ public class TrackingMarker : MonoBehaviour
         // 앞서 나온 0~1값으로 최소, 최대 사이 비율을 맞춰 값 반환
         return Mathf.Lerp(minFollowSpeed, maxFollowSpeed, t);
     }
-
-    public bool TryGetTargetMarkerResult(int targetId, out MarkerPositionResult markerPositionResults)
+    public void Initialize(int id, HandManager handManager, MarkerWorldPos markerWorldPos)
     {
-        var targetMarker = this.markerPositionResults.Find(marker => marker.id == targetId);
-        if (this.markerPositionResults != null && this.markerPositionResults.Count > 0 && targetMarker != null)
-        {
-            markerPositionResults = targetMarker;
-            return true;
-        }
-        else
-        {
-            markerPositionResults = null;
-            return false;
-        }
-        
+        targetId = id;
+        this.handManager = handManager;
+        this.markerWorldPos = markerWorldPos;
+    }
+
+    public int GetCardNumber()
+    {
+        return targetId;
+    }
+    public void SetisDetaile(bool detaileMode)
+    {
+        isDetaile = detaileMode;
     }
 }

@@ -8,9 +8,7 @@ using System.Collections.Generic;
 public class MarkerDetecter : MonoBehaviour
 {
     [SerializeField] private PassthroughCameraAccess passthroughCameraAccess;
-    [SerializeField] private float markerSize = 19f;
     [SerializeField] private float detectionIntervalTime = 8f;
-
     // [SerializeField] private RawImage rawImage;
 
     // 쓰레드용 작동 변수
@@ -29,12 +27,17 @@ public class MarkerDetecter : MonoBehaviour
     private bool hasNewResult = false;
     private readonly object resultLock = new object();
 
-
-    // 마커의 크기인 19mm의 절반 사이즈를 기준으로 삼음
-    private float markerHalfSize = 0.0187f/2f;
+    // 마커의 크기를 실측한 18.7mm로 설정
+    private float markerSize = 18.7f;
+    // 크게 만들어긴 기준마커는 40mm로 설정
+    private float middleAnchorMarkerSize = 40f;
+    // 마커 절반사이즈 저장 변수
+    private float markerHalfSize;
+    private float middleAnchorMarkerHalfSize;
 
     // 마커 크기 나타내는 변수
     private Point3f[] objectPoints;
+    private Point3f[] middleAnchorObjectPoints;
 
     // 카메라 파라미터 나타내는 변수
     private double[,] cameraMatrix;
@@ -60,15 +63,14 @@ public class MarkerDetecter : MonoBehaviour
 
     void Start()
     {
-        // 마커 절반크기 계산
-        markerHalfSize = markerSize * 0.001f/2f;
         // 탐지 쿨다운 조절
         detectionInterval = 1f / detectionIntervalTime;
-
         // 마커 찾기용 변수 값 넣기
         detectorParameters = new DetectorParameters();
         dictionary = CvAruco.GetPredefinedDictionary(PredefinedDictionaryName.Dict4X4_50);
 
+        // 마커 절반크기 계산
+        markerHalfSize = markerSize * 0.001f/2f;
         // 마커 네 꼭지점을 나타내는 배열
         // 평면이기에 z는 0으로 통일
         objectPoints = new[]
@@ -77,6 +79,16 @@ public class MarkerDetecter : MonoBehaviour
             new Point3f(markerHalfSize, markerHalfSize, 0), 
             new Point3f(markerHalfSize, -markerHalfSize, 0), 
             new Point3f(-markerHalfSize, -markerHalfSize, 0)
+        };
+
+        // 0번 마커용 정보 생성
+        middleAnchorMarkerHalfSize = middleAnchorMarkerSize *  0.001f/2f;
+        middleAnchorObjectPoints = new[]
+        {
+            new Point3f(-middleAnchorMarkerHalfSize, middleAnchorMarkerHalfSize, 0), 
+            new Point3f(middleAnchorMarkerHalfSize, middleAnchorMarkerHalfSize, 0), 
+            new Point3f(middleAnchorMarkerHalfSize, -middleAnchorMarkerHalfSize, 0), 
+            new Point3f(-middleAnchorMarkerHalfSize, -middleAnchorMarkerHalfSize, 0)
         };
 
         
@@ -185,13 +197,15 @@ public class MarkerDetecter : MonoBehaviour
         {
             for(int i = 0; i < ids.Length; i++)
             {
-                // 중앙앵커 마커 크기 변경할거면 나중에 추가
-                // if(ids[i] == middleAnchorMarkerID)
                 // 이차원 배열이라 내부 배열 따로 크기 할당
                 tvec[i] = new double[3];
                 rvec[i] = new double[3];
+
+                // 마커 번호 이용해 사용할 마커 크기 변경
+                var targetObjectPoints = ids[i] == 0 ? middleAnchorObjectPoints : objectPoints;
+
                 // 마커 정보, 코너 정보, 카메라 정보, 외곡정보, 출력받을 변수
-                Cv2.SolvePnP(objectPoints, corners[i], cameraMatrix, distCoeffs, ref rvec[i], ref tvec[i]);
+                Cv2.SolvePnP(targetObjectPoints, corners[i], cameraMatrix, distCoeffs, ref rvec[i], ref tvec[i]);
             }
             
         }        
