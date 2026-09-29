@@ -13,7 +13,7 @@ public class TrackingMarker : MonoBehaviour
     // 앵커 월드기준 위치 저장용 변수
     private Vector3 worldPosition = Vector3.zero;
     private Quaternion worldRotation = Quaternion.identity;
-    
+
     // 데드존용 좌표 변수
     private Vector3 deadZonePosition;
     private Quaternion deadZoneRotation;
