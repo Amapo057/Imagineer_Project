@@ -99,7 +99,6 @@ public class MarkerWorldPos : MonoBehaviour
     // 원하는 id의 마커 정보 반환
     public bool TryGetTargetMarkerResult(int targetId, out MarkerPositionResult markerPositionResults)
     {
-<<<<<<< HEAD
         // markerPositionResults는 Update()에서 markerDetecter가 한 번이라도 마커를 잡아야 생성됨.
         // 그 전에(예: 씬 시작 직후, 중앙 앵커 잡는 중 카메라에 마커가 안 보이는 순간) 이 함수가
         // 호출되면 필드가 null이라 Find() 호출 자체가 NullReferenceException을 던짐.
@@ -112,10 +111,6 @@ public class MarkerWorldPos : MonoBehaviour
 
         var targetMarker = this.markerPositionResults.Find(marker => marker.id == targetId);
         if (targetMarker != null)
-=======
-        var targetMarker = this.markerPositionResults.Find(marker => marker.id == targetId);
-        if (this.markerPositionResults != null && this.markerPositionResults.Count > 0 && targetMarker != null)
->>>>>>> 8d54456be1d810410ad0f089c4e8214df3c11b23
         {
             markerPositionResults = targetMarker;
             return true;
