@@ -591,6 +591,10 @@ PrefabInstance:
       propertyPath: debugNum
       value: 
       objectReference: {fileID: 145558815}
+    - target: {fileID: 8378964884430376598, guid: 80f85390cd569466a877930234d656f7, type: 3}
+      propertyPath: markerWorldPos
+      value: 
+      objectReference: {fileID: 1112192441}
     - target: {fileID: 8850131498232592925, guid: 80f85390cd569466a877930234d656f7, type: 3}
       propertyPath: m_Name
       value: CardSlotPrefabs (3)
@@ -1483,6 +1487,10 @@ PrefabInstance:
       propertyPath: debugNum
       value: 
       objectReference: {fileID: 456669634}
+    - target: {fileID: 8378964884430376598, guid: 80f85390cd569466a877930234d656f7, type: 3}
+      propertyPath: markerWorldPos
+      value: 
+      objectReference: {fileID: 1112192441}
     - target: {fileID: 8850131498232592925, guid: 80f85390cd569466a877930234d656f7, type: 3}
       propertyPath: m_Name
       value: CardSlotPrefabs (2)
@@ -1668,7 +1676,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4e02de81c06b4b1ea7017adca824518, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StartInit
-  debug1: {fileID: 1291198855}
   debug3: {fileID: 358809305}
   markerWorldPos: {fileID: 1112192441}
   anchorManager: {fileID: 1633533945}
@@ -2670,7 +2677,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PassthroughCameraViewer
   passthroughCameraAccess: {fileID: 728123096}
-  detectionIntervalTime: 8
+  detectionIntervalTime: 3
 --- !u!4 &1112192440
 Transform:
   m_ObjectHideFlags: 0
@@ -2700,6 +2707,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MarkerWorldPos
   debugText4: {fileID: 590709519}
   markerDetecter: {fileID: 1112192439}
+  fieldRoot: {fileID: 169710966}
 --- !u!1 &1122354339
 GameObject:
   m_ObjectHideFlags: 0
@@ -4017,6 +4025,10 @@ PrefabInstance:
       propertyPath: debugNum
       value: 
       objectReference: {fileID: 1891281239}
+    - target: {fileID: 8378964884430376598, guid: 80f85390cd569466a877930234d656f7, type: 3}
+      propertyPath: markerWorldPos
+      value: 
+      objectReference: {fileID: 1112192441}
     - target: {fileID: 8850131498232592925, guid: 80f85390cd569466a877930234d656f7, type: 3}
       propertyPath: m_Name
       value: CardSlotPrefabs (1)
@@ -4480,6 +4492,10 @@ PrefabInstance:
       propertyPath: debugNum
       value: 
       objectReference: {fileID: 6194074365499858128}
+    - target: {fileID: 8378964884430376598, guid: 80f85390cd569466a877930234d656f7, type: 3}
+      propertyPath: markerWorldPos
+      value: 
+      objectReference: {fileID: 1112192441}
     - target: {fileID: 8850131498232592925, guid: 80f85390cd569466a877930234d656f7, type: 3}
       propertyPath: m_Name
       value: CardSlotPrefabs

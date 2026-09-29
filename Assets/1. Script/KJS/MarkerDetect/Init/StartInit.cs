@@ -1,9 +1,7 @@
 using UnityEngine;
 
 public class StartInit : MonoBehaviour
-{
-    [SerializeField] private TMPro.TextMeshProUGUI debug1;
-    [SerializeField] private TMPro.TextMeshProUGUI debug3;
+{    [SerializeField] private TMPro.TextMeshProUGUI debug3;
     [SerializeField] private MarkerWorldPos markerWorldPos;
     [SerializeField] private AnchorManager anchorManager;
 
@@ -24,9 +22,7 @@ public class StartInit : MonoBehaviour
     private float anchorCreateTime = 2f;
 
     void Start()
-    {
-        debug1.text = "Set midle Anchor";
-        
+    {        
     }
 
     // Update is called once per frame
@@ -59,7 +55,6 @@ public class StartInit : MonoBehaviour
             {
                 isMiddleAnchor = true;
                 anchorManager.CreateTableAnchor(lerpPosition, slerpRotation);
-                debug1.text = "Middle Anchor Setting Complete";
             }
         }
         

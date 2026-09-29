@@ -33,7 +33,7 @@ public class TrackingMarker : MonoBehaviour
     private float maxSpeed = 0f;
 
     // 목표 id
-    private int targetId = 0;
+    public int TargetId{get; private set;}
 
     // 자세히보기 설정
     private bool isDetaile = false;
@@ -41,7 +41,7 @@ public class TrackingMarker : MonoBehaviour
     void Update()
     {
         // 목표 id와 일치하는 마커를 찾아 저장
-        if(markerWorldPos.TryGetTargetMarkerResult(targetId, out var targetMarker))
+        if(markerWorldPos.TryGetTargetMarkerResult(TargetId, out var targetMarker))
         {
             worldPosition = targetMarker.worldPosition;
             worldRotation = targetMarker.worldRotation;
@@ -148,14 +148,9 @@ public class TrackingMarker : MonoBehaviour
     }
     public void Initialize(int id, HandManager handManager, MarkerWorldPos markerWorldPos)
     {
-        targetId = id;
+        TargetId = id;
         this.handManager = handManager;
         this.markerWorldPos = markerWorldPos;
-    }
-
-    public int GetCardNumber()
-    {
-        return targetId;
     }
     public void SetisDetaile(bool detaileMode)
     {

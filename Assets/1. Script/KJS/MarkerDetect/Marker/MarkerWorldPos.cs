@@ -6,6 +6,7 @@ public class MarkerWorldPos : MonoBehaviour
 {    [SerializeField] private TMPro.TextMeshProUGUI debugText4;
     // 탐지 코드 연결
     [SerializeField] private MarkerDetecter markerDetecter;
+    [SerializeField] private GameObject fieldRoot;
 
     // 마커 인식 당시 카메라 정보 저장용 변수
     private Vector3 cameraPosition;
@@ -14,10 +15,16 @@ public class MarkerWorldPos : MonoBehaviour
     private List<MarkerPositionResult> markerPositionResults;
     private bool isNewWorldPosResult = false;
 
+    // 새 마커 정보 세대 번호
+    // 20년 작동시 오버플로우 발생하니 주의
+    public uint MarkerVersion {get; private set;}
+
     void Update()
     {
         if(markerDetecter.TryGetMarkerResult(out var result))
         {
+            // 마커 세대 업데이트
+            MarkerVersion++;
             // 마커들 저장용 리스트 초기화
             markerPositionResults = new List<MarkerPositionResult>(result.Count);
 
@@ -36,7 +43,7 @@ public class MarkerWorldPos : MonoBehaviour
                 }
                 // 좌표계 변환 함수로 월드 좌표계로 변환
                 (var markerWorldPosition, var markerWorldRotation) = LocalToWroldPos(result[i]);
-
+                if(result[i].id != 0 && isEnemyField(markerWorldPosition)) continue;
                 // 변환한 좌표를 id와 함께 리스트에 저장
                 markerPositionResults.Add(new MarkerPositionResult{id = result[i].id, worldPosition = markerWorldPosition, worldRotation = markerWorldRotation});
             }
@@ -94,6 +101,14 @@ public class MarkerWorldPos : MonoBehaviour
         Quaternion worldRotation = cameraWorldRotation * markerOffset;
 
         return (worldPosition, worldRotation);
+    }
+
+    private bool isEnemyField(Vector3 worldPosition)
+    {
+        // 중심 기준으로 좌표 변경
+        Vector3 localPosition = fieldRoot.transform.InverseTransformPoint(worldPosition);
+        // 해당 축 기준으로 중앙 너머인지 여부 전달
+        return localPosition.z > 0f;
     }
 
     // 원하는 id의 마커 정보 반환
