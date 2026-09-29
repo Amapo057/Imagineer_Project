@@ -8,8 +8,13 @@ using System.Collections.Generic;
 public class MarkerDetecter : MonoBehaviour
 {
     [SerializeField] private PassthroughCameraAccess passthroughCameraAccess;
-    [SerializeField] private float markerSize = 19f;
     [SerializeField] private float detectionIntervalTime = 8f;
+
+    // 마커 탐지 유효 거리(m). 카메라(내 시점)에서 이 거리보다 멀리 잡힌 마커는 버림.
+    // 상대쪽 필드에 있는 동일 카드 마커가 화면에 걸려서 같이 잡히는 경우를 걸러내기 위한 값
+    // (지성 확인: 상대쪽은 애초에 잘 안잡히지만, 혹시 잡혀도 여기서 한 번 더 컷오프됨)
+    // 실제 테이블/암리치에 맞게 튜닝 필요
+    [SerializeField] private float maxMarkerDistance = 1.0f;
 
     // [SerializeField] private RawImage rawImage;
 
@@ -29,12 +34,17 @@ public class MarkerDetecter : MonoBehaviour
     private bool hasNewResult = false;
     private readonly object resultLock = new object();
 
-
-    // 마커의 크기인 19mm의 절반 사이즈를 기준으로 삼음
-    private float markerHalfSize = 0.0187f/2f;
+    // 마커의 크기를 실측한 18.7mm로 설정
+    private float markerSize = 18.7f;
+    // 크게 만들어긴 기준마커는 40mm로 설정
+    private float middleAnchorMarkerSize = 40f;
+    // 마커 절반사이즈 저장 변수
+    private float markerHalfSize;
+    private float middleAnchorMarkerHalfSize;
 
     // 마커 크기 나타내는 변수
     private Point3f[] objectPoints;
+    private Point3f[] middleAnchorObjectPoints;
 
     // 카메라 파라미터 나타내는 변수
     private double[,] cameraMatrix;
@@ -60,15 +70,14 @@ public class MarkerDetecter : MonoBehaviour
 
     void Start()
     {
-        // 마커 절반크기 계산
-        markerHalfSize = markerSize * 0.001f/2f;
         // 탐지 쿨다운 조절
         detectionInterval = 1f / detectionIntervalTime;
-
         // 마커 찾기용 변수 값 넣기
         detectorParameters = new DetectorParameters();
         dictionary = CvAruco.GetPredefinedDictionary(PredefinedDictionaryName.Dict4X4_50);
 
+        // 마커 절반크기 계산
+        markerHalfSize = markerSize * 0.001f/2f;
         // 마커 네 꼭지점을 나타내는 배열
         // 평면이기에 z는 0으로 통일
         objectPoints = new[]
@@ -77,6 +86,16 @@ public class MarkerDetecter : MonoBehaviour
             new Point3f(markerHalfSize, markerHalfSize, 0), 
             new Point3f(markerHalfSize, -markerHalfSize, 0), 
             new Point3f(-markerHalfSize, -markerHalfSize, 0)
+        };
+
+        // 0번 마커용 정보 생성
+        middleAnchorMarkerHalfSize = middleAnchorMarkerSize *  0.001f/2f;
+        middleAnchorObjectPoints = new[]
+        {
+            new Point3f(-middleAnchorMarkerHalfSize, middleAnchorMarkerHalfSize, 0), 
+            new Point3f(middleAnchorMarkerHalfSize, middleAnchorMarkerHalfSize, 0), 
+            new Point3f(middleAnchorMarkerHalfSize, -middleAnchorMarkerHalfSize, 0), 
+            new Point3f(-middleAnchorMarkerHalfSize, -middleAnchorMarkerHalfSize, 0)
         };
 
         
@@ -175,27 +194,39 @@ public class MarkerDetecter : MonoBehaviour
         // 마커 감지
         CvAruco.DetectMarkers(gray, dictionary, out corners, out ids, detectorParameters, out rejected);
 
-        // 미리 배열 공간 할당
-        // 마커 위치
-        double[][] tvec = new double[ids.Length][];
-        // 마커 회전 정보
-        double[][] rvec = new double[ids.Length][];
+        // 거리 컷오프 통과한 마커만 담을 리스트 (미리 배열로 할당하지 않고, 필터링된 개수만큼만 채움)
+        var filteredIds = new List<int>(ids.Length);
+        var filteredTvec = new List<double[]>(ids.Length);
+        var filteredRvec = new List<double[]>(ids.Length);
 
         if (ids.Length > 0 && corners.Length > 0)
         {
             for(int i = 0; i < ids.Length; i++)
             {
-                // 중앙앵커 마커 크기 변경할거면 나중에 추가
-                // if(ids[i] == middleAnchorMarkerID)
                 // 이차원 배열이라 내부 배열 따로 크기 할당
-                tvec[i] = new double[3];
-                rvec[i] = new double[3];
+                double[] tvecI = new double[3];
+                double[] rvecI = new double[3];
+
+                // 마커 번호 이용해 사용할 마커 크기 변경 (0번은 중앙 기준마커라 더 큰 사이즈 사용)
+                var targetObjectPoints = ids[i] == 0 ? middleAnchorObjectPoints : objectPoints;
+
                 // 마커 정보, 코너 정보, 카메라 정보, 외곡정보, 출력받을 변수
-                Cv2.SolvePnP(objectPoints, corners[i], cameraMatrix, distCoeffs, ref rvec[i], ref tvec[i]);
+                Cv2.SolvePnP(targetObjectPoints, corners[i], cameraMatrix, distCoeffs, ref rvecI, ref tvecI);
+
+                // tvec은 카메라 기준 좌표라, 벡터 크기가 곧 카메라(내 시점)~마커 거리(m)임
+                // 이 값이 maxMarkerDistance를 넘으면(=상대쪽 필드에 있을 가능성 높음) 결과에서 제외
+                double distance = System.Math.Sqrt(tvecI[0] * tvecI[0] + tvecI[1] * tvecI[1] + tvecI[2] * tvecI[2]);
+                if (distance > maxMarkerDistance)
+                {
+                    continue;
+                }
+
+                filteredIds.Add(ids[i]);
+                filteredTvec.Add(tvecI);
+                filteredRvec.Add(rvecI);
             }
-            
-        }        
-        return (ids, tvec, rvec);
+        }
+        return (filteredIds.ToArray(), filteredTvec.ToArray(), filteredRvec.ToArray());
     }
 
     // 변환 완료한 좌표 및 회전 반환
