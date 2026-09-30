@@ -1,22 +1,24 @@
 using UnityEngine;
 using OpenCvSharp;
 using System.Collections.Generic;
+using TMPro;
 
 public class MarkerWorldPos : MonoBehaviour
-{    [SerializeField] private TMPro.TextMeshProUGUI debugText4;
+{   [SerializeField] private TMPro.TextMeshProUGUI debugText4;
     // 탐지 코드 연결
     [SerializeField] private MarkerDetecter markerDetecter;
     [SerializeField] private GameObject fieldRoot;
 
     // 마커 인식 당시 카메라 정보 저장용 변수
-    private Vector3 cameraPosition;
+    // 자세히보기거리 측정을 위해 프로퍼티로 카메라 위치 선언
+    public Vector3 CameraPosition{get; private set;} = Vector3.zero;
     private Quaternion cameraRotation;
     // 이번 마커들 저장용 리스트
     private List<MarkerPositionResult> markerPositionResults;
 
     // 새 마커 정보 세대 번호
     // 20년 작동시 오버플로우 발생하니 주의
-    public uint MarkerVersion {get; private set;}
+    public uint MarkerVersion {get; private set;} = 0;
 
     void Update()
     {
@@ -37,7 +39,7 @@ public class MarkerWorldPos : MonoBehaviour
                 // 첫번째 결과에서 카메라 좌표와 회전값을 가져와 저장
                 if(i == 0)
                 {
-                    cameraPosition = result[i].cameraPosition;
+                    CameraPosition = result[i].cameraPosition;
                     cameraRotation = result[i].cameraRotation;
                 }
                 // 좌표계 변환 함수로 월드 좌표계로 변환
@@ -56,7 +58,7 @@ public class MarkerWorldPos : MonoBehaviour
         // opencv좌표계에서 유니티 좌표계로 변경하기 위해 y축 반전
         Vector3 yInversionPos = new Vector3((float)result.tvec[0], -(float)result.tvec[1], (float)result.tvec[2]);
         // 카메라 위치 + 회전을 반영한 상대위치로 월드위치 계산
-        Vector3 worldPosition = cameraPosition + cameraRotation * yInversionPos;
+        Vector3 worldPosition = CameraPosition + cameraRotation * yInversionPos;
 
         // --- 회전 ---
         using Mat rvecMat = new Mat(3, 1, MatType.CV_64FC1);
