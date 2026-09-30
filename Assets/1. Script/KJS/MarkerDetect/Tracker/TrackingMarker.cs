@@ -45,52 +45,55 @@ public class TrackingMarker : MonoBehaviour
         {
             worldPosition = targetMarker.worldPosition;
             worldRotation = targetMarker.worldRotation;
-        }
-        if (isDetaile)
-        {
-            // 손 속도를 활용해 보간값으로 활용
-            float followSpeed = GetCardFollowSpeed(handManager.GetHandSpeed());
-            // 손이 이동중이면 속도 기록
-            if (isHandMove)
+            // 자세히 보기 모드일때 보간 사용
+            if (isDetaile)
             {
-                isCardMove = true;
-                maxSpeed = Mathf.Max(maxSpeed, followSpeed);
-            }
-            // 현재 카드와 앵커의 거리와 각도를 비교해 2cm이상 또는 10도 이상 차이이면 이전의 최대속도로 이동
-            float cardToMarkerDistance = Vector3.Distance(transform.position, worldPosition);
-            float cardToMarkerAngle = Quaternion.Angle(transform.rotation, worldRotation);
-            if(isCardMove && !isHandMove)
-            {
-                if (cardToMarkerDistance > 0.01f || cardToMarkerAngle > 7f)
+                // 손 속도를 활용해 보간값으로 활용
+                float followSpeed = GetCardFollowSpeed(handManager.GetHandSpeed());
+                // 손이 이동중이면 속도 기록
+                if (isHandMove)
                 {
-                    followSpeed = maxSpeed;
+                    isCardMove = true;
+                    maxSpeed = Mathf.Max(maxSpeed, followSpeed);
                 }
-                else
+                // 현재 카드와 앵커의 거리와 각도를 비교해 2cm이상 또는 10도 이상 차이이면 이전의 최대속도로 이동
+                float cardToMarkerDistance = Vector3.Distance(transform.position, worldPosition);
+                float cardToMarkerAngle = Quaternion.Angle(transform.rotation, worldRotation);
+                if(isCardMove && !isHandMove)
                 {
-                    isCardMove = false;
-                    maxSpeed = 0f;
+                    if (cardToMarkerDistance > 0.01f || cardToMarkerAngle > 7f)
+                    {
+                        followSpeed = maxSpeed;
+                    }
+                    else
+                    {
+                        isCardMove = false;
+                        maxSpeed = 0f;
+                    }
                 }
-            }
-            // 적용한 속도를 사용해 보간에 사용할 값으로 변환
-            float t = 1f - Mathf.Exp(-followSpeed * Time.deltaTime);
+                // 적용한 속도를 사용해 보간에 사용할 값으로 변환
+                float t = 1f - Mathf.Exp(-followSpeed * Time.deltaTime);
 
-            // 이동 여부 판정 함수로 이동여부 bool 받기
-            var (applyPosition, applyRotation) = DeadZoneLimit();
-            if (applyPosition)
-            {
-                // 보간으로 부드럽게 움직이도록 구성
-                transform.position = Vector3.Lerp(transform.position, worldPosition, t);
+                // 이동 여부 판정 함수로 이동여부 bool 받기
+                var (applyPosition, applyRotation) = DeadZoneLimit();
+                if (applyPosition)
+                {
+                    // 보간으로 부드럽게 움직이도록 구성
+                    transform.position = Vector3.Lerp(transform.position, worldPosition, t);
+                }
+                if (applyRotation)
+                {
+                    transform.rotation = Quaternion.Slerp(transform.rotation, worldRotation, t);
+                }
             }
-            if (applyRotation)
+            // 일반 상태일신 보간없이 바로 이동
+            else
             {
-                transform.rotation = Quaternion.Slerp(transform.rotation, worldRotation, t);
+                transform.position = worldPosition;
+                transform.rotation = worldRotation;
             }
         }
-        else
-        {
-            transform.position = worldPosition;
-            transform.rotation = worldRotation;
-        }
+        
     }
     private (bool applyPosition, bool applyRotation) DeadZoneLimit()
     {
