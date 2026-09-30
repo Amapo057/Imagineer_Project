@@ -10,9 +10,11 @@ public class CardColliderManager : MonoBehaviour
 
     // 인스턴스가 생성된 카드 관리용 딕셔너리 리스트
     private Dictionary<int, TrackingMarker> cardInstances = new();
+
+    private uint lastMarkerVersion = 0;
     void Update()
     {
-        if(markerWorldPos.TryGetMarkerResult(out var markerResults))
+        if(markerWorldPos.TryGetMarkerResult(out var markerResults) && lastMarkerVersion != markerWorldPos.MarkerVersion)
         {
             foreach(var marker in markerResults)
             {
@@ -26,6 +28,7 @@ public class CardColliderManager : MonoBehaviour
                 // 카드 콜라이더 생성
                 CreateCardCollider(marker);
             }
+            lastMarkerVersion = markerWorldPos.MarkerVersion;
         }
     }
     // 인자로 받은 마커를 활용해 콜라이더 배치

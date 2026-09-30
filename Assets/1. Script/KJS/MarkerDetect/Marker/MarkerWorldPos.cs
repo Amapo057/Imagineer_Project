@@ -13,7 +13,6 @@ public class MarkerWorldPos : MonoBehaviour
     private Quaternion cameraRotation;
     // 이번 마커들 저장용 리스트
     private List<MarkerPositionResult> markerPositionResults;
-    private bool isNewWorldPosResult = false;
 
     // 새 마커 정보 세대 번호
     // 20년 작동시 오버플로우 발생하니 주의
@@ -47,7 +46,6 @@ public class MarkerWorldPos : MonoBehaviour
                 // 변환한 좌표를 id와 함께 리스트에 저장
                 markerPositionResults.Add(new MarkerPositionResult{id = result[i].id, worldPosition = markerWorldPosition, worldRotation = markerWorldRotation});
             }
-            isNewWorldPosResult = true;
             // ui에 아이디 출력
             debugText4.text = idsText;
         }
@@ -136,10 +134,9 @@ public class MarkerWorldPos : MonoBehaviour
     // 모든 마커 정보 반환
     public bool TryGetMarkerResult(out List<MarkerPositionResult> markerPositionResults)
     {
-        if (this.markerPositionResults != null && this.markerPositionResults.Count > 0 && isNewWorldPosResult)
+        if (this.markerPositionResults != null && this.markerPositionResults.Count > 0)
         {
             markerPositionResults = this.markerPositionResults;
-            isNewWorldPosResult = false;
             return true;
         }
         else
