@@ -2512,6 +2512,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DetailModeManager
   markerWorldPos: {fileID: 1112192441}
   debug2: {fileID: 222597134}
+  debug1: {fileID: 1291198855}
 --- !u!1 &785964481
 GameObject:
   m_ObjectHideFlags: 0
@@ -3522,7 +3523,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PassthroughCameraViewer
   passthroughCameraAccess: {fileID: 728123096}
-  detectionIntervalTime: 3
+  detailModeManager: {fileID: 778729747}
 --- !u!4 &1112192440
 Transform:
   m_ObjectHideFlags: 0
@@ -3751,6 +3752,7 @@ MonoBehaviour:
   markerWorldPos: {fileID: 1112192441}
   cardColliderPrefab: {fileID: 7856180186874901761, guid: 0362b6293e5d14497bfeef15729edc78, type: 3}
   handManager: {fileID: 1936565131}
+  detailModeManager: {fileID: 778729747}
 --- !u!1 &1270736354
 GameObject:
   m_ObjectHideFlags: 0

@@ -7,11 +7,13 @@ using System.Collections.Generic;
 
 public class MarkerDetecter : MonoBehaviour
 {
+    // 패스스루 연결
     [SerializeField] private PassthroughCameraAccess passthroughCameraAccess;
-    [SerializeField] private float detectionIntervalTime = 8f;
+    // 자세히보기 매니저 연결
+    [SerializeField] private DetailModeManager detailModeManager;
 
-    // [SerializeField] private RawImage rawImage;
-
+    // 초당 마커 검출 횟수 설정
+    private float detectionIntervalTime = 3f;
     // 쓰레드용 작동 변수
     private Thread cvThread;
     private bool isRunning;
@@ -54,6 +56,8 @@ public class MarkerDetecter : MonoBehaviour
     private float timer;
     // 마커 탐지 기준(1f/목표 주사율f)
     private float detectionInterval;
+    private float detailModeDetectionInterval;
+    private float normalModeDetectionInterval;
 
     // 값 저장
     // 넘겨줄 때 포지션
@@ -65,7 +69,11 @@ public class MarkerDetecter : MonoBehaviour
     void Start()
     {
         // 탐지 쿨다운 조절
-        detectionInterval = 1f / detectionIntervalTime;
+        normalModeDetectionInterval = 1f / detectionIntervalTime;
+        // 자세히보기 상태에선 3배 자주 검사
+        detailModeDetectionInterval = 1f / (detectionIntervalTime * 3);
+        detectionInterval = normalModeDetectionInterval;
+
         // 마커 찾기용 변수 값 넣기
         detectorParameters = new DetectorParameters();
         dictionary = CvAruco.GetPredefinedDictionary(PredefinedDictionaryName.Dict4X4_50);
@@ -81,7 +89,6 @@ public class MarkerDetecter : MonoBehaviour
             new Point3f(markerHalfSize, -markerHalfSize, 0), 
             new Point3f(-markerHalfSize, -markerHalfSize, 0)
         };
-
         // 0번 마커용 정보 생성
         middleAnchorMarkerHalfSize = middleAnchorMarkerSize *  0.001f/2f;
         middleAnchorObjectPoints = new[]
@@ -92,7 +99,6 @@ public class MarkerDetecter : MonoBehaviour
             new Point3f(-middleAnchorMarkerHalfSize, -middleAnchorMarkerHalfSize, 0)
         };
 
-        
         // quest 카메라 내부 파라이터 받기
         var intrinsics = passthroughCameraAccess.Intrinsics;
 
@@ -120,8 +126,11 @@ public class MarkerDetecter : MonoBehaviour
 
     void Update()
     {
+        // 자세히보기 모드 상태에 따라 검출 주기 변경
+        // detectionInterval = detailModeManager.IsDetailMode ? detailModeDetectionInterval : normalModeDetectionInterval;
         // 프레임 타이머
         timer += Time.deltaTime;
+
         // 패스쓰루 카메라 작동 여부 확인
         if (passthroughCameraAccess == null) return;
         if (!passthroughCameraAccess.IsPlaying) return;

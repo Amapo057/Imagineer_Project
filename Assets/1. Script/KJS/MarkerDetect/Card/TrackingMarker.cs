@@ -6,6 +6,9 @@ public class TrackingMarker : MonoBehaviour
     [SerializeField] private HandManager handManager;
     // 마커 월드 좌표 생성 코드 받기
     [SerializeField] private MarkerWorldPos markerWorldPos;
+    // 자세히보기 모드 여부 받기
+    [SerializeField] private DetailModeManager detailModeManager;
+
     // 데드존 설정값
     private float positionDeadZone = 0.001f;
     private float rotationDeadZone = 1.0f;
@@ -46,7 +49,7 @@ public class TrackingMarker : MonoBehaviour
             worldPosition = targetMarker.worldPosition;
             worldRotation = targetMarker.worldRotation;
             // 자세히 보기 모드일때 보간 사용
-            if (isDetaile)
+            if (detailModeManager.IsDetailMode && detailModeManager.LastMarkerId == TargetId)
             {
                 // 손 속도를 활용해 보간값으로 활용
                 float followSpeed = GetCardFollowSpeed(handManager.GetHandSpeed());
@@ -93,7 +96,6 @@ public class TrackingMarker : MonoBehaviour
                 transform.rotation = worldRotation;
             }
         }
-        
     }
     private (bool applyPosition, bool applyRotation) DeadZoneLimit()
     {
@@ -149,11 +151,12 @@ public class TrackingMarker : MonoBehaviour
         // 앞서 나온 0~1값으로 최소, 최대 사이 비율을 맞춰 값 반환
         return Mathf.Lerp(minFollowSpeed, maxFollowSpeed, t);
     }
-    public void Initialize(int id, HandManager handManager, MarkerWorldPos markerWorldPos)
+    public void Initialize(int id, HandManager handManager, MarkerWorldPos markerWorldPos, DetailModeManager detailModeManager)
     {
         TargetId = id;
         this.handManager = handManager;
         this.markerWorldPos = markerWorldPos;
+        this.detailModeManager = detailModeManager;
     }
     public void SetisDetaile(bool detaileMode)
     {
