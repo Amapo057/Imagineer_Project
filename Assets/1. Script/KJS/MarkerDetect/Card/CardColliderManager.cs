@@ -24,7 +24,7 @@ public class CardColliderManager : MonoBehaviour
                 // 리스트에 이미 마커가 있는지 검사
                 if (cardInstances.ContainsKey(marker.id)) continue;
                 // 홀수시 건너뛰기
-                if(marker.id % 2 != 0) continue;
+                // if(marker.id % 2 != 0) continue;
 
                 // 카드 콜라이더 생성
                 CreateCardCollider(marker);

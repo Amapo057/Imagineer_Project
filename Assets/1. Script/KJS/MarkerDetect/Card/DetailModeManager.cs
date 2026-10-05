@@ -6,7 +6,6 @@ public class DetailModeManager : MonoBehaviour
     // 마커 정보 받기위해 코드 연결
     [SerializeField] private MarkerWorldPos markerWorldPos;
     [SerializeField] private TMPro.TextMeshProUGUI debug2;
-    [SerializeField] private TMPro.TextMeshProUGUI debug1;
     // 코드로부터 받아 저장할 변수 선언
     private uint lastMarkerVersion = 0;
     public int LastMarkerId{get; private set;} = 0;
