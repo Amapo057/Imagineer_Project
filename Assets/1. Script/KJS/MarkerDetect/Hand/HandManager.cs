@@ -5,7 +5,6 @@ using UnityEngine;
 public class HandManager : MonoBehaviour
 {
     [SerializeField] private OVRSkeleton handSkeleton;
-    [SerializeField] private TMPro.TextMeshProUGUI debug4;
 
     // 엄지끝 정보용 변수
     private Transform thumbTip = null;
