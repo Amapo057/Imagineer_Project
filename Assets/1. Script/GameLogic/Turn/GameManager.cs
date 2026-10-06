@@ -19,6 +19,14 @@ public class GameManager
     // (무승부는 "둘 다 필드+손+덱에 카드가 한 장도 없을 때 명치 맞은 횟수가 같은 경우"에만 발생)
     public event Action<PlayerSide?> OnGameOver;
 
+    // 전투 페이즈(HandleCombat) 중 공격/피격이 실제로 일어난 시점을 알려주는 이벤트.
+    // GameManager는 MonoBehaviour가 아니라 비주얼(모션/애니메이션)을 직접 건드릴 수 없으므로,
+    // "누가/어느 라인에서" 공격했는지 또는 맞았는지만 알려주고, 실제 모션 재생은 비주얼을 들고 있는
+    // 쪽(DemoTurnController 등 구독자)이 맡음 — 애니메이션 클립/Animator 연결은 별도 작업
+    public event Action<PlayerSide, int> OnMinionAttacked; // 공격을 실행한 하수인 (side, laneIndex)
+    public event Action<PlayerSide, int> OnMinionHit;      // 피해를 입은 하수인 (side, laneIndex) — 반격으로 공격자가 맞는 경우도 포함
+    public event Action<PlayerSide> OnFaceHit;             // 명치를 맞은 쪽 (대응하는 하수인이 없는 경우)
+
     private bool isGameOver;
     public bool IsGameOver => isGameOver;
 
@@ -212,8 +220,11 @@ public class GameManager
     // 정리/사망 카드 정리는 그대로 해야 해서 turnNumber==1이어도 메서드 끝까지는 진행함)
     private void HandleCombat()
     {
-        var attackerBoard = Board.GetBoard(State.CurrentPlayer);
-        var defenderBoard = Board.GetOpponentBoard(State.CurrentPlayer);
+        var attackerSide = State.CurrentPlayer;
+        var defenderSide = attackerSide == PlayerSide.Me ? PlayerSide.Opponent : PlayerSide.Me;
+
+        var attackerBoard = Board.GetBoard(attackerSide);
+        var defenderBoard = Board.GetOpponentBoard(attackerSide);
 
         if (turnNumber != 1)
         {
@@ -222,20 +233,27 @@ public class GameManager
                 var attacker = attackerBoard.lanes[i];
                 if (attacker == null || !attacker.IsAlive) continue;
 
+                // 공격이 확정된 시점 — 피해 계산 전에 쏴서, 구독하는 쪽이 "공격" 모션을 먼저
+                // 재생하고 그 다음에 피격 반응이 오도록 순서를 맞출 수 있게 함
+                OnMinionAttacked?.Invoke(attackerSide, i);
+
                 var defender = defenderBoard.lanes[i];
                 if (defender != null && defender.IsAlive)
                 {
                     defender.TakeDamage(attacker.currentAttack);
+                    OnMinionHit?.Invoke(defenderSide, i);
 
                     // "반격" 능력이 있을 때만 공격자도 피해를 입음 (기본은 공격자 무피해)
                     if (defender.data.HasKeyword(CardKeyword.Counter))
                     {
                         attacker.TakeDamage(defender.currentAttack);
+                        OnMinionHit?.Invoke(attackerSide, i);
                     }
                 }
                 else
                 {
                     defenderBoard.TakeFaceHit();
+                    OnFaceHit?.Invoke(defenderSide);
                 }
 
                 attacker.hasAttackedThisTurn = true;
