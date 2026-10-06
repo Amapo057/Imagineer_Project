@@ -38,13 +38,13 @@ public class DetailModeManager : MonoBehaviour
             foreach(var marker in markerResult)
             {
                 // 0번 마커 무시
-                if(marker.id == 0) continue;
+                if(marker.markerId == 0) continue;
                 // 카메라와 마커 거리 측정 후 이전보다 더 가까우면 id와 거리 기록
                 float distance = Vector3.Distance(cameraPosition, marker.worldPosition);
                 if (distance < nearestDistance)
                 {
                     nearestDistance = distance;
-                    nearestMarkerId = marker.id;
+                    nearestMarkerId = marker.markerId;
                 }
 
             }
