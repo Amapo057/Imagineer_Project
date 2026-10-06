@@ -60,10 +60,25 @@ public class DemoTurnController : MonoBehaviour
 
     private GameManager gameManager;
 
+    // 공격/피격 모션 트리거용 Animator 파라미터 이름. 애니메이션 쪽(김평안 "카드 행동별 애니메이션
+    // 연결")에서 Animator Controller에 이 이름의 Trigger 파라미터를 만들어두면 그대로 연결됨
+    private const string AttackAnimatorTrigger = "Attack";
+    private const string HitAnimatorTrigger = "Hit";
+
     void Start()
     {
         gameManager = new GameManager();
         gameManager.OnGameOver += HandleGameOver;
+
+        // 공격·피격 모션 상태 연결: GameManager(순수 로직, MonoBehaviour 아님)가 전투 중
+        // "누가/어느 라인에서" 공격했는지, 맞았는지를 이벤트로 쏴주면, 여기서 그 라인에 실제로
+        // 떠 있는 카드 비주얼(occupyingCard)을 찾아 Animator 트리거를 켜줌(TriggerMotion 참고).
+        // 지금은 카드 쪽에 Animator/애니메이션 클립이 아직 연결되기 전이라(김평안 "카드 행동별
+        // 애니메이션 연결" 작업 쪽), Animator가 없으면 TriggerMotion이 조용히 아무 일도 안 함 —
+        // 그쪽에서 Animator + Attack/Hit 트리거 파라미터만 추가하면 바로 동작함
+        gameManager.OnMinionAttacked += HandleMinionAttacked;
+        gameManager.OnMinionHit += HandleMinionHit;
+        gameManager.OnFaceHit += HandleFaceHit;
 
         // StartGame()이 첫 턴 드로우까지 바로 처리하므로, 덱은 그 전에 채워둠.
         // cardDatabase가 꽂혀 있으면 실제 게임과 완전히 같은 방식(공용9 + 선택한 진영7 + 마법4 = 20장,
@@ -441,6 +456,41 @@ public class DemoTurnController : MonoBehaviour
                 slot.occupyingCard = null;
             }
         }
+    }
+
+    // GameManager.OnMinionAttacked 구독 — side/laneIndex에 해당하는 카드 비주얼에 "공격" 모션을 트리거
+    private void HandleMinionAttacked(PlayerSide side, int laneIndex)
+    {
+        TriggerMotion(side, laneIndex, AttackAnimatorTrigger);
+    }
+
+    // GameManager.OnMinionHit 구독 — side/laneIndex에 해당하는 카드 비주얼에 "피격" 모션을 트리거
+    // (반격으로 공격자가 맞는 경우도 GameManager 쪽에서 같은 이벤트로 넘어옴)
+    private void HandleMinionHit(PlayerSide side, int laneIndex)
+    {
+        TriggerMotion(side, laneIndex, HitAnimatorTrigger);
+    }
+
+    // GameManager.OnFaceHit 구독 — 명치를 맞은 쪽은 대응하는 라인에 카드 비주얼이 없어서(상대
+    // 라인이 비어 있어 명치로 들어간 경우) 아직 연결할 비주얼 대상이 없음. 명치 피격 이펙트/모션을
+    // 어디에 걸지(카메라 흔들림/플레이어 아바타 등) 정해지면 그때 이어붙이면 됨 — 의도적인 빈 구현
+    private void HandleFaceHit(PlayerSide side)
+    {
+    }
+
+    // side/laneIndex 라인에 실제로 떠 있는 카드 비주얼(occupyingCard)을 찾아 그 위의 Animator에
+    // triggerName 트리거를 켬. fieldSlots에서 occupyingCard를 찾는 방식은 SyncDeadMinions와 동일.
+    // 카드 비주얼이 없거나(이미 죽어서 Destroy됨) 아직 Animator가 안 붙어 있으면 조용히 아무 일도 안 함
+    // — 애니메이션 쪽 연결 전까지는 호출해도 안전함
+    private void TriggerMotion(PlayerSide side, int laneIndex, string triggerName)
+    {
+        var slot = fieldSlots.FirstOrDefault(s => s != null && !s.IsSpellSlot && s.Side == side && s.LaneIndex == laneIndex);
+        if (slot == null || slot.occupyingCard == null) return;
+
+        var animator = slot.occupyingCard.GetComponentInChildren<Animator>();
+        if (animator == null) return;
+
+        animator.SetTrigger(triggerName);
     }
 
     private void UpdateTurnText()
