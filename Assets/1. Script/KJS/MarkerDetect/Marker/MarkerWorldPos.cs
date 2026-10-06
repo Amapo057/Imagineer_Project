@@ -46,7 +46,7 @@ public class MarkerWorldPos : MonoBehaviour
                 (var markerWorldPosition, var markerWorldRotation) = LocalToWroldPos(result[i]);
                 if(result[i].id != 0 && isEnemyField(markerWorldPosition)) continue;
                 // 변환한 좌표를 id와 함께 리스트에 저장
-                markerPositionResults.Add(new MarkerPositionResult{id = result[i].id, worldPosition = markerWorldPosition, worldRotation = markerWorldRotation});
+                markerPositionResults.Add(new MarkerPositionResult{markerId = result[i].id, worldPosition = markerWorldPosition, worldRotation = markerWorldRotation});
             }
             // ui에 아이디 출력
             debugText4.text = idsText;
@@ -121,7 +121,7 @@ public class MarkerWorldPos : MonoBehaviour
             return false;
         }
 
-        var targetMarker = this.markerPositionResults.Find(marker => marker.id == targetId);
+        var targetMarker = this.markerPositionResults.Find(marker => marker.markerId == targetId);
         if (targetMarker != null)
         {
             markerPositionResults = targetMarker;

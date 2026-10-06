@@ -67,6 +67,6 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "ImagineerProject.slnx",
+    "dotnet.defaultSolution": "Imagineer_Project.slnx",
     "dotnet.enableWorkspaceBasedDevelopment": false
 }
