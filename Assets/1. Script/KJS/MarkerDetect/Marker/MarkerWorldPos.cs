@@ -133,6 +133,27 @@ public class MarkerWorldPos : MonoBehaviour
             return false;
         }
     }
+    public bool TryGetTargetCardResult(int targetId, out MarkerPositionResult markerPositionResults)
+    {
+        // 아직 생성된 마커 정보가 없으면 null 반환
+        if (this.markerPositionResults == null || this.markerPositionResults.Count == 0)
+        {
+            markerPositionResults = null;
+            return false;
+        }
+
+        var targetMarker = this.markerPositionResults.Find(marker => marker.cardId == targetId);
+        if (targetMarker != null)
+        {
+            markerPositionResults = targetMarker;
+            return true;
+        }
+        else
+        {
+            markerPositionResults = null;
+            return false;
+        }
+    }
     // 모든 마커 정보 반환
     public bool TryGetMarkerResult(out List<MarkerPositionResult> markerPositionResults)
     {

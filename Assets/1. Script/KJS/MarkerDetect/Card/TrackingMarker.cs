@@ -36,7 +36,7 @@ public class TrackingMarker : MonoBehaviour
     private float maxSpeed = 0f;
 
     // 목표 id
-    public int TargetId{get; private set;}
+    public int TargetCardId{get; private set;}
 
     // 자세히보기 설정
     private bool isDetaile = false;
@@ -44,12 +44,12 @@ public class TrackingMarker : MonoBehaviour
     void Update()
     {
         // 목표 id와 일치하는 마커를 찾아 저장
-        if(markerWorldPos.TryGetTargetMarkerResult(TargetId, out var targetMarker))
+        if(markerWorldPos.TryGetTargetCardResult(TargetCardId, out var targetMarker))
         {
             worldPosition = targetMarker.worldPosition;
             worldRotation = targetMarker.worldRotation;
             // 자세히 보기 모드일때 보간 사용
-            if (detailModeManager.IsDetailMode && detailModeManager.LastMarkerId == TargetId)
+            if (detailModeManager.IsDetailMode && detailModeManager.LastMarkerId == TargetCardId)
             {
                 // 손 속도를 활용해 보간값으로 활용
                 float followSpeed = GetCardFollowSpeed(handManager.GetHandSpeed());
@@ -59,7 +59,7 @@ public class TrackingMarker : MonoBehaviour
                     isCardMove = true;
                     maxSpeed = Mathf.Max(maxSpeed, followSpeed);
                 }
-                // 현재 카드와 앵커의 거리와 각도를 비교해 2cm이상 또는 10도 이상 차이이면 이전의 최대속도로 이동
+                // 현재 카드와 앵커의 거리와 각도를 비교해 기준이상 차이이면 이전의 최대속도로 이동
                 float cardToMarkerDistance = Vector3.Distance(transform.position, worldPosition);
                 float cardToMarkerAngle = Quaternion.Angle(transform.rotation, worldRotation);
                 if(isCardMove && !isHandMove)
@@ -153,7 +153,7 @@ public class TrackingMarker : MonoBehaviour
     }
     public void Initialize(int id, HandManager handManager, MarkerWorldPos markerWorldPos, DetailModeManager detailModeManager)
     {
-        TargetId = id;
+        TargetCardId = id;
         this.handManager = handManager;
         this.markerWorldPos = markerWorldPos;
         this.detailModeManager = detailModeManager;
