@@ -44,9 +44,12 @@ public class MarkerWorldPos : MonoBehaviour
                 }
                 // 좌표계 변환 함수로 월드 좌표계로 변환
                 (var markerWorldPosition, var markerWorldRotation) = LocalToWroldPos(result[i]);
+                // 중앙 마커인 0번을 제외한 중앙 너머 마커는 무시
                 if(result[i].id != 0 && isEnemyField(markerWorldPosition)) continue;
+                int cardId = result[i].id / 2;
+                bool isBack = result[i].id % 2 == 1;
                 // 변환한 좌표를 id와 함께 리스트에 저장
-                markerPositionResults.Add(new MarkerPositionResult{markerId = result[i].id, worldPosition = markerWorldPosition, worldRotation = markerWorldRotation});
+                markerPositionResults.Add(new MarkerPositionResult{markerId = result[i].id, cardId = cardId, isBack = isBack, worldPosition = markerWorldPosition, worldRotation = markerWorldRotation});
             }
             // ui에 아이디 출력
             debugText4.text = idsText;

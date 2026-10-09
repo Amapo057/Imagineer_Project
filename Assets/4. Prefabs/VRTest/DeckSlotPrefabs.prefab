@@ -250,7 +250,7 @@ GameObject:
   - component: {fileID: 6631172725060999582}
   - component: {fileID: 3818030250162187288}
   - component: {fileID: 5454067223302767679}
-  - component: {fileID: 8378964884430376598}
+  - component: {fileID: 7646415083685679529}
   m_Layer: 0
   m_Name: DeckSlotPrefabs
   m_TagString: Untagged
@@ -323,7 +323,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &8378964884430376598
+--- !u!114 &7646415083685679529
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -332,12 +332,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 8850131498232592925}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f78ea75d1f895409db1aca4100ce9624, type: 3}
+  m_Script: {fileID: 11500000, guid: 6fee9078fde82f848bf9d104dd73f9ef, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CardSlot
-  fieldNum: 88
+  m_EditorClassIdentifier: Assembly-CSharp::DeckSlot
   debugNum: {fileID: 0}
-  markerWorldPos: {fileID: 0}
 --- !u!1 &9216296524331687652
 GameObject:
   m_ObjectHideFlags: 0

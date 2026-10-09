@@ -1937,8 +1937,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86498d5f33722f643aa5cf8015297aa2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VisualOffset
-  positionOffset: {x: -0.1611, y: -0.0174, z: 0.0669}
-  rotationOffset: {x: 180, y: 17.495, z: 89.991}
+  positionOffset: {x: 0.025, y: 0.13, z: -0.017}
+  rotationOffset: {x: -180, y: 17.495, z: 89.991}
 --- !u!1 &564928278
 GameObject:
   m_ObjectHideFlags: 0
@@ -3323,6 +3323,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 169710967}
     m_Modifications:
+    - target: {fileID: 804666546293329657, guid: bba015afb926a470abacf1600aa4fc24, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 1255.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5467238121869565193, guid: bba015afb926a470abacf1600aa4fc24, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 1327.39
+      objectReference: {fileID: 0}
     - target: {fileID: 6631172725060999582, guid: bba015afb926a470abacf1600aa4fc24, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.004
@@ -3363,14 +3371,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 8378964884430376598, guid: bba015afb926a470abacf1600aa4fc24, type: 3}
+    - target: {fileID: 7646415083685679529, guid: bba015afb926a470abacf1600aa4fc24, type: 3}
       propertyPath: debugNum
       value: 
       objectReference: {fileID: 2006840291}
-    - target: {fileID: 8378964884430376598, guid: bba015afb926a470abacf1600aa4fc24, type: 3}
-      propertyPath: markerWorldPos
-      value: 
-      objectReference: {fileID: 1112192441}
     - target: {fileID: 8850131498232592925, guid: bba015afb926a470abacf1600aa4fc24, type: 3}
       propertyPath: m_Name
       value: DeckSlotPrefabs
