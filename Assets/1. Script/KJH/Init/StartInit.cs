@@ -1,7 +1,8 @@
 using UnityEngine;
 
 public class StartInit : MonoBehaviour
-{    [SerializeField] private TMPro.TextMeshProUGUI debug3;
+{   
+    [SerializeField] private TMPro.TextMeshProUGUI debug3;
     [SerializeField] private MarkerWorldPos markerWorldPos;
     [SerializeField] private AnchorManager anchorManager;
 

@@ -22,7 +22,7 @@ public class CardColliderManager : MonoBehaviour
                 // 중앙 기준점용 0번은 무시
                 if(marker.markerId == 0) continue;
                 // 리스트에 이미 마커가 있는지 검사
-                if (cardInstances.ContainsKey(marker.markerId)) continue;
+                if (cardInstances.ContainsKey(marker.cardId)) continue;
                 // 홀수시 건너뛰기
                 // if(marker.id % 2 != 0) continue;
 
@@ -40,9 +40,9 @@ public class CardColliderManager : MonoBehaviour
         // 마커 추적 코드 받기
         TrackingMarker trackingMarker = obj.GetComponent<TrackingMarker>();
         // 타겟 아이디 설정
-        trackingMarker.Initialize(marker.markerId, handManager, markerWorldPos, detailModeManager);               
+        trackingMarker.Initialize(marker.cardId, handManager, markerWorldPos, detailModeManager);               
         // 처리한 아이디는 리스트에 추가
-        cardInstances.Add(marker.markerId, trackingMarker);
+        cardInstances.Add(marker.cardId, trackingMarker);
     }
 }
 
