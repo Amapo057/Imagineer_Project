@@ -5,9 +5,12 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/0. Scene/MainGame.unity
     guid: 4790482e33000414481b302db6a3a660
+  - enabled: 1
+    path: Assets/0. Scene/0 KJS_HandTranparent.unity
+    guid: 2b5e2b24e4bed419fb70a299ef8aa977
   m_configObjects:
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: ae54bc764f50bd144b38f121989b1cd3, type: 2}
     com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 0bc1430afed14194698ed9e7ec6460f0, type: 2}
