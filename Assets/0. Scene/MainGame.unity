@@ -787,7 +787,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8850131498232592925, guid: 80f85390cd569466a877930234d656f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 145558817}
   m_SourcePrefab: {fileID: 100100000, guid: 80f85390cd569466a877930234d656f7, type: 3}
 --- !u!4 &145558814 stripped
 Transform:
@@ -805,6 +808,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!1 &145558816 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8850131498232592925, guid: 80f85390cd569466a877930234d656f7, type: 3}
+  m_PrefabInstance: {fileID: 145558813}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &145558817
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 145558816}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 308b91fbae59c4540bfad895275c44f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SlotModelSpawner
+  cardDatabase: {fileID: 11400000, guid: 04eaad98e0ae4b15ac8d08612693ab1b, type: 2}
+  markerWorldPos: {fileID: 1112192441}
 --- !u!1 &165559766
 GameObject:
   m_ObjectHideFlags: 0
@@ -1687,7 +1709,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8850131498232592925, guid: 80f85390cd569466a877930234d656f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 456669636}
   m_SourcePrefab: {fileID: 100100000, guid: 80f85390cd569466a877930234d656f7, type: 3}
 --- !u!4 &456669633 stripped
 Transform:
@@ -1705,6 +1730,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!1 &456669635 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8850131498232592925, guid: 80f85390cd569466a877930234d656f7, type: 3}
+  m_PrefabInstance: {fileID: 456669632}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &456669636
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 456669635}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 308b91fbae59c4540bfad895275c44f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SlotModelSpawner
+  cardDatabase: {fileID: 11400000, guid: 04eaad98e0ae4b15ac8d08612693ab1b, type: 2}
+  markerWorldPos: {fileID: 1112192441}
 --- !u!1 &464660075
 GameObject:
   m_ObjectHideFlags: 0
@@ -6111,7 +6155,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8850131498232592925, guid: 80f85390cd569466a877930234d656f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1891281241}
   m_SourcePrefab: {fileID: 100100000, guid: 80f85390cd569466a877930234d656f7, type: 3}
 --- !u!4 &1891281238 stripped
 Transform:
@@ -6129,6 +6176,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!1 &1891281240 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8850131498232592925, guid: 80f85390cd569466a877930234d656f7, type: 3}
+  m_PrefabInstance: {fileID: 1891281237}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1891281241
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1891281240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 308b91fbae59c4540bfad895275c44f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SlotModelSpawner
+  cardDatabase: {fileID: 11400000, guid: 04eaad98e0ae4b15ac8d08612693ab1b, type: 2}
+  markerWorldPos: {fileID: 1112192441}
 --- !u!1 &1893768501
 GameObject:
   m_ObjectHideFlags: 0
@@ -6779,7 +6845,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8850131498232592925, guid: 80f85390cd569466a877930234d656f7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6194074365499858130}
   m_SourcePrefab: {fileID: 100100000, guid: 80f85390cd569466a877930234d656f7, type: 3}
 --- !u!114 &6194074365499858128 stripped
 MonoBehaviour:
@@ -6854,6 +6923,25 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7514580905037169527, guid: 15f02b7628cfd461c85cbcd73bd10f8b, type: 3}
   m_PrefabInstance: {fileID: 8367193013948017830}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &6194074365499858129 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8850131498232592925, guid: 80f85390cd569466a877930234d656f7, type: 3}
+  m_PrefabInstance: {fileID: 6194074365499858127}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6194074365499858130
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6194074365499858129}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 308b91fbae59c4540bfad895275c44f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SlotModelSpawner
+  cardDatabase: {fileID: 11400000, guid: 04eaad98e0ae4b15ac8d08612693ab1b, type: 2}
+  markerWorldPos: {fileID: 1112192441}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
