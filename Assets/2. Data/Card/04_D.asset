@@ -22,4 +22,5 @@ MonoBehaviour:
   attack: 2
   health: 2
   keywords: 1
-  hologramPrefab: {fileID: 0}
+  hologramPrefab: {fileID: 3528178315081860777, guid: 810fcecdb64f5ec4fac9cb3a15823b89, type: 3}
+  illustration: {fileID: 0}
