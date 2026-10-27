@@ -25,4 +25,14 @@ public static class VRGameSession
             return instance;
         }
     }
+
+    // GameNetworkManager가 핸드셰이크로 실제 선공/후공을 정한 뒤 OnGameStartReceived로 알려주면
+    // 호출됨. Game getter가 이미 StartGame(PlayerSide.Me)로 시작시켜둔 상태(코스트/ownTurnCount
+    // 등)를 네트워크가 정한 진짜 선공 쪽으로 다시 맞춤 — 안 그러면 호스트/클라이언트 양쪽이
+    // "누가 선공인지"를 다르게 알고 있어서 코스트 공식(선공 1,2,3.. / 후공 2,2,3..)이 서로 어긋남.
+    // 네트워크가 안 붙은 솔로 플레이에서는 이 메서드가 호출되지 않으므로 기존 동작 그대로임.
+    public static void ApplyNetworkFirstPlayer(PlayerSide firstPlayer)
+    {
+        Game.StartGame(firstPlayer);
+    }
 }
