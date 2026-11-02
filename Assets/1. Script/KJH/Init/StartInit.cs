@@ -20,7 +20,7 @@ public class StartInit : MonoBehaviour
     private float t = 5;
     // 좌표 기준 대기값
     private float anchorReadyTime = 0;
-    private float anchorCreateTime = 2f;
+    private float anchorCreateTime = 3.5f;
 
     void Start()
     {        
