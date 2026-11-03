@@ -27,6 +27,12 @@ public class PlayerBoardState
     // 명치 체력은 데미지 총합이 아니라 "맞은 횟수"로 취급
     public int faceHitCount;
 
+    // 지금 장착 중인 무기의 공격력(무기 키워드 전용). 장착과 동시에 바로 휘둘러 소모되므로
+    // (GameManager.EquipAndSwingWeapon 참고) 평소엔 거의 항상 0이고, 휘두르는 그 순간에만
+    // 잠깐 값이 들어갔다가 바로 0으로 돌아옴. 나중에 "여러 턴에 걸쳐 들고 있다가 쓰는" 지속형
+    // 무기로 확장하게 되면 이 필드를 그대로 재사용하면 됨
+    public int weaponAttack;
+
     public List<CardData> hand = new List<CardData>();
     public List<CardData> deck = new List<CardData>();
 

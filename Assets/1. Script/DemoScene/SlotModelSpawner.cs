@@ -227,6 +227,13 @@ public class SlotModelSpawner : MonoBehaviour
         board.currentCost -= data.cost;
         registeredCardId = cardId;
 
+        // 연결되어 있으면 상대 쪽 클라이언트에도 "카드ID/라인"을 알려서 자기 쪽 Opponent 보드에
+        // 똑같이 반영하게 함(GameHUDController.ApplyOpponentCardPlayed가 받음). 지금 슬롯은 전부
+        // Me 쪽이라(위 side 필드 설명 참고) 여기서 보내는 건 항상 "내가 낸 카드"임.
+        // 연결 안 된 솔로 플레이에서는 Connected가 false라 그냥 아무 일도 안 일어남.
+        var net = GameNetworkManager.Instance;
+        if (net.Connected) net.SendCardPlayed(cardId, laneIndex);
+
         // 전투의함성: 회복/앞의 적 피해만 여기서 처리함(DemoTurnController.ResolveBattlecry 참고).
         // 드로우는 손패가 없어서 의미가 없어 생략하고, 무기는 적 하수인을 지목할 VR용 입력
         // 방식이 아직 없어서(IFieldTargetPicker의 VR 구현이 없음) 지금은 그냥 보류함

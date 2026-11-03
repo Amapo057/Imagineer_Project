@@ -23,4 +23,11 @@
   <uses-permission android:name="horizonos.permission.HEADSET_CAMERA" />
   <uses-permission android:name="com.oculus.permission.USE_ANCHOR_API" />
   <uses-permission android:name="com.oculus.permission.USE_SCENE" />
+  <!-- GameNetworkManager의 UDP 브로드캐스트 디스커버리 + TCP 연결에 필요한 권한.
+       PC 두 대로 테스트할 땐 필요 없어서 빠져있었음(2026-10-28 추가, 실제 퀘스트로 미검증) -->
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <!-- GameNetworkManager.AcquireMulticastLock()가 createMulticastLock()을 쓰려면 이 권한이 필요함 -->
+  <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
 </manifest>

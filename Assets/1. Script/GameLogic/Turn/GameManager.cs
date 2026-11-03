@@ -16,7 +16,9 @@ public class GameManager
     public GameBoardState Board { get; } = new GameBoardState();
 
     // 게임이 끝났을 때 쏘는 이벤트. 이긴 쪽을 알려주고, 무승부면 null이 넘어옴
-    // (무승부는 "둘 다 필드+손+덱에 카드가 한 장도 없을 때 명치 맞은 횟수가 같은 경우"에만 발생)
+    // (무승부는 "둘 다 필드+손+덱에 카드가 한 장도 없을 때 명치 맞은 횟수가 같은 경우"에만 발생 —
+    // resourceExhaustionDrawEnabled가 false인 모드(VR)에서는 이 무승부 조건 자체가 꺼져 있어서
+    // 명치를 FaceHitThreshold번 맞아야만 게임이 끝남)
     public event Action<PlayerSide?> OnGameOver;
 
     // 전투 페이즈(HandleCombat) 중 공격/피격이 실제로 일어난 시점을 알려주는 이벤트.
@@ -26,6 +28,7 @@ public class GameManager
     public event Action<PlayerSide, int> OnMinionAttacked; // 공격을 실행한 하수인 (side, laneIndex)
     public event Action<PlayerSide, int> OnMinionHit;      // 피해를 입은 하수인 (side, laneIndex) — 반격으로 공격자가 맞는 경우도 포함
     public event Action<PlayerSide> OnFaceHit;             // 명치를 맞은 쪽 (대응하는 하수인이 없는 경우)
+    public event Action<PlayerSide, int> OnWeaponEquipped;  // 무기를 장착한 쪽과 그 무기의 공격력 (EquipAndSwingWeapon 참고)
 
     private bool isGameOver;
     public bool IsGameOver => isGameOver;
@@ -34,8 +37,18 @@ public class GameManager
     private int turnNumber = 1;
     public int TurnNumber => turnNumber;
 
-    public GameManager()
+    // resourceExhaustionDrawEnabled: "둘 다 필드+손+덱에 카드가 한 장도 없으면 무승부 판정"
+    // 규칙(CheckGameOver 참고)을 쓸지 여부. 데모(DemoTurnController)처럼 손패/덱이 실제로 있는
+    // 모드에서는 당연히 켜져 있어야 하지만, VR(VRGameSession)은 손패/덱 개념이 아예 없어서
+    // (물리 카드를 든 순간이 곧 손패) 이 조건이 "게임 시작 직후, 아직 아무도 카드를 안 낸 상태"
+    // 에서도 true가 되어버림 — End Turn 한 번만 눌러도 그 자리에서 무승부로 끝나버리는 버그가
+    // 있었음. VR에서는 생성 시 false로 꺼서 이 조건 자체를 아예 안 보게 함(기본값은 true라
+    // 데모 쪽 동작은 그대로 유지됨)
+    private readonly bool resourceExhaustionDrawEnabled;
+
+    public GameManager(bool resourceExhaustionDrawEnabled = true)
     {
+        this.resourceExhaustionDrawEnabled = resourceExhaustionDrawEnabled;
         State.OnPhaseEnter += HandlePhaseEnter;
         State.OnTurnChanged += _ => turnNumber++;
     }
@@ -189,6 +202,27 @@ public class GameManager
         CheckGameOver();
     }
 
+    // 무기 키워드 전용: wielderSide가 공격력(amount)만큼 데미지를 주는 무기를 장착하고, 장착과
+    // 동시에(플레이어가 이미 골라둔) 대상 하나(targetSide편 targetLaneIndex 라인)를 향해 즉시
+    // 한 번 휘둘러 피해를 줌. 대상 판정/사망 처리는 ApplyDamageToLane을 그대로 재사용함.
+    //
+    // 지금은 "장착 즉시 1회 소모"로 처리함 — 이 게임엔 아직 하수인 전투와 별개로 "플레이어가
+    // 무기로 직접 공격"하는 별도 턴/페이즈가 없어서, 여러 턴에 걸쳐 들고 있다가 나중에 쓰는
+    // 지속형 무기까지 만들려면 "무기를 언제/어떻게 쓸지" 정하는 입력 흐름이 새로 필요함.
+    // PlayerBoardState.weaponAttack 필드는 그 확장을 염두에 두고 남겨둠
+    public void EquipAndSwingWeapon(PlayerSide wielderSide, int amount, PlayerSide targetSide, int targetLaneIndex)
+    {
+        if (isGameOver) return;
+
+        var wielderBoard = Board.GetBoard(wielderSide);
+        wielderBoard.weaponAttack = amount;
+        OnWeaponEquipped?.Invoke(wielderSide, amount);
+
+        ApplyDamageToLane(targetSide, targetLaneIndex, amount);
+
+        wielderBoard.weaponAttack = 0;
+    }
+
     // 마법 "강화" 전용: side편 필드에 지금 나와 있는 아군 하수인 전체의 공격력을 amount만큼 즉시 올림.
     // "이번 턴이 끝날 때까지"만 유지되는 버프라 CardInstance.tempAttackBonus에 따로 적립해두고,
     // 그 편의 전투 페이즈(HandleCombat)가 끝나는 시점에 자동으로 원상복구됨
@@ -298,7 +332,7 @@ public class GameManager
             return;
         }
 
-        if (Board.me.HasNoCards && Board.opponent.HasNoCards)
+        if (resourceExhaustionDrawEnabled && Board.me.HasNoCards && Board.opponent.HasNoCards)
         {
             if (Board.me.faceHitCount < Board.opponent.faceHitCount)
             {

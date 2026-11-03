@@ -7,5 +7,7 @@ public static class NetMsg
     public const string Host = "HOST";             // 호스트로 정해진 뒤 계속 브로드캐스트(재접속 대비)
     public const string GameStart = "GAME_START";  // 호스트가 선공/후공을 정해서 알려줄 때
     public const string EndTurn = "END_TURN";      // 턴 종료
+    public const string CoinUsed = "COIN_USED";    // 후공 동전 1회 사용
     public const string CardPlayed = "CARD_PLAYED"; // 카드 낸 것 (카드ID, 라인 인덱스)
+    public const string Rematch = "REMATCH";       // 재대결 요청 - 받은 쪽(특히 호스트)이 게임을 새로 초기화함
 }

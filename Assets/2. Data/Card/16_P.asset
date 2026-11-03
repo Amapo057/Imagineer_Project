@@ -19,6 +19,6 @@ MonoBehaviour:
   description: 
   cost: 5
   attack: 3
-  health: 8
+  health: 9
   keywords: 0
-  hologramPrefab: {fileID: 0}
+  hologramPrefab: {fileID: 3441108725992354116, guid: f29559835f6fde94ba8af59259638bfc, type: 3}

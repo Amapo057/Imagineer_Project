@@ -384,7 +384,11 @@ public class DemoTurnController : MonoBehaviour
             {
                 if (chosen == null) return; // 취소되거나 유효 대상이 없었음
 
-                gameManager.ApplyDamageToLane(chosen.Side, chosen.LaneIndex, amount);
+                // 예전엔 바로 ApplyDamageToLane으로 즉시 피해만 줬는데, 카드 디자인 쪽 설명이
+                // "지정한 적에게 피해를 줍니다"에서 "공격력과 같은 데미지를 주는 무기를 든다"로
+                // 바뀌면서(GameManager.EquipAndSwingWeapon 참고) 무기를 장착하는 과정을 거쳐서
+                // 피해를 주도록 바뀜. 지금 당장은 장착 즉시 소모라 체감되는 동작은 똑같음
+                gameManager.EquipAndSwingWeapon(slot.Side, amount, chosen.Side, chosen.LaneIndex);
                 SyncDeadMinions();
             });
         }

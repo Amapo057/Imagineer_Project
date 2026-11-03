@@ -9,6 +9,15 @@ using UnityEngine;
 public static class VRGameSession
 {
     private static GameManager instance;
+    private static KJH.Balancing.SecondPlayerCoin coin;
+    public static KJH.Balancing.SecondPlayerCoin Coin
+    {
+        get
+        {
+            var game = Game;
+            return coin ?? (coin = new KJH.Balancing.SecondPlayerCoin(game));
+        }
+    }
 
     public static GameManager Game
     {
@@ -16,8 +25,13 @@ public static class VRGameSession
         {
             if (instance == null)
             {
-                instance = new GameManager();
                 // VR 데모는 손패가 없어서(물리 카드를 든 순간이 곧 손패) 덱 구성 자체가 의미 없음.
+                // 손패/덱이 항상 0장이라, GameManager의 "둘 다 카드 없음 -> 무승부" 판정
+                // (resourceExhaustionDrawEnabled)을 그대로 켜두면 게임 시작 직후 아직 아무도
+                // 카드를 안 낸 상태에서 End Turn만 눌러도 그 자리에서 무승부로 끝나버림 — VR에서는
+                // 이 조건 자체가 의미가 없으므로 꺼서 생성함. 승패는 명치를 FaceHitThreshold번
+                // 맞았을 때만 결정됨
+                instance = new GameManager(resourceExhaustionDrawEnabled: false);
                 // 상대 쪽은 아직 물리 슬롯이 없어서(SlotModelSpawner 참고) 늘 내가 선공으로 고정해둠
                 // — 나중에 상대쪽 물리 슬롯/턴 전환 UI가 따로 생기면 이 부분을 다시 검토하면 됨
                 instance.StartGame(PlayerSide.Me);
@@ -33,6 +47,22 @@ public static class VRGameSession
     // 네트워크가 안 붙은 솔로 플레이에서는 이 메서드가 호출되지 않으므로 기존 동작 그대로임.
     public static void ApplyNetworkFirstPlayer(PlayerSide firstPlayer)
     {
-        Game.StartGame(firstPlayer);
+        // A network start is a fresh match; retain no costs or lanes from the
+        // provisional solo start or a previous round.
+        instance = new GameManager(resourceExhaustionDrawEnabled: false);
+        instance.StartGame(firstPlayer);
+        coin = new KJH.Balancing.SecondPlayerCoin(Game);
+    }
+
+    // 재대결(재시작) 전용 - GameManager.StartGame()은 턴/선공만 다시 정하고 라인에 놓인 카드나
+    // 명치 맞은 횟수는 그대로 남겨두기 때문에(코드 참고: Board는 안 건드림), 완전히 깨끗한 새
+    // 게임을 만들려면 인스턴스 자체를 새로 만들어야 함. GameHUDController.OnRematchButtonClicked
+    // /OnRematchReceived에서 호출함 - 네트워크 연결 중이면 이후 ApplyNetworkFirstPlayer로 바로
+    // 다시 호출되어 선공이 올바르게 재조정됨(일단 Me로 시작해두는 이유는 솔로 플레이와 동일)
+    public static void ResetGame()
+    {
+        coin = null;
+        instance = new GameManager(resourceExhaustionDrawEnabled: false);
+        instance.StartGame(PlayerSide.Me);
     }
 }
