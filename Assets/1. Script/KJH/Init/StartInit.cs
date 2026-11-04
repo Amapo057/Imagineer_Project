@@ -58,6 +58,5 @@ public class StartInit : MonoBehaviour
                 anchorManager.CreateTableAnchor(lerpPosition, slerpRotation);
             }
         }
-        
     }
 }

@@ -14,7 +14,7 @@ public class LoadOtherScene : MonoBehaviour
 
     public void GoToAnchorInit()
     {
-        SceneManager.LoadScene("2 KJS_");
+        SceneManager.LoadScene("2 KJS_AnchorInit");
     }
 
     public void GoToMainGame()
@@ -25,5 +25,10 @@ public class LoadOtherScene : MonoBehaviour
     public void GoToEnd()
     {
         SceneManager.LoadScene("4 end");
+    }
+
+    public void ResetScene()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 }

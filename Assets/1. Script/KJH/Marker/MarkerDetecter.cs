@@ -115,15 +115,21 @@ public class MarkerDetecter : MonoBehaviour
 
         // quest 카메라 내부 파라이터 받기
         var intrinsics = passthroughCameraAccess.Intrinsics;
+        var resolution = passthroughCameraAccess.CurrentResolution;
 
+        // 카메라 값과 영상의 비율 계산
+        // 현재 퀘스트 기기 한쪽의 카메라 값이 1728로 인식되어 이를 보정하기 위해 사용
+        float scale = (float)resolution.x / intrinsics.SensorResolution.x;
+
+        // 현재 비율문제는 없고, 스케일 문제가 발견되어 크롭 판정 제거
         // 메타 패스스루 비율은 1280x1280이나, 카메라로 받는 실제 비율이 다를경우 그 값을 계산해 추후 카메라 정보 보정에 사용
-        float cropY = (intrinsics.SensorResolution.y - passthroughCameraAccess.CurrentResolution.y) / 2f;
+        // float cropY = (intrinsics.SensorResolution.y - passthroughCameraAccess.CurrentResolution.y) / 2f;
         
         // openCV용 카메라 정보 행렬 만들기
         cameraMatrix = new double[,]
         {
-            {intrinsics.FocalLength.x, 0, intrinsics.PrincipalPoint.x},
-            {0, intrinsics.FocalLength.y, intrinsics.PrincipalPoint.y - cropY},
+            {intrinsics.FocalLength.x * scale, 0, intrinsics.PrincipalPoint.x * scale},
+            {0, intrinsics.FocalLength.y * scale, intrinsics.PrincipalPoint.y * scale},
             {0, 0, 1}
         };
 
