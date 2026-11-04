@@ -16,8 +16,8 @@ MonoBehaviour:
   cardName: "\uB9C8\uBC95-\uC9C0\uC2DD\uC758\uB450\uB8E8\uB9C8\uB9AC"
   cardType: 1
   cardClass: {fileID: 0}
-  description: "\uCE74\uB4DC 1\uC7A5\uC744 \uBF51\uC2B5\uB2C8\uB2E4"
-  cost: 2
+  description: "\uce74\ub4dc 3\uc7a5\uc744 \ubf51\uc2b5\ub2c8\ub2e4"
+  cost: 1
   attack: 0
   health: 0
   keywords: 8

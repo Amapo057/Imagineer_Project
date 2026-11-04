@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -51,9 +51,6 @@ public class GameHUDController : MonoBehaviour
     [Tooltip("승리/패배/무승부 문구를 보여줄 텍스트. resultPanel 밑에 있어야 함")]
     [SerializeField] private TextMeshProUGUI resultText;
 
-    // 명치 체력은 "맞은 횟수" 기준(GameRules.FaceHitThreshold = 10)이라, 화면엔 10에서 그 횟수를
-    // 뺀 "남은 목숨"으로 보여줌(사용자 지시: "10에서 남은 뺸 목숨으로 바꿔")
-    private const int StartingLives = GameRules.FaceHitThreshold;
 
     private readonly List<string> logLines = new List<string>();
     // 재대결(ResetGame)로 GameManager 인스턴스가 통째로 바뀌면 예전 bool 가드(subscribed)로는
@@ -65,6 +62,10 @@ public class GameHUDController : MonoBehaviour
     // 씀 — "내 턴인지/내가 이겼는지" 같은 판정에는 절대 쓰면 안 됨(물리 슬롯이 항상 PlayerSide.Me
     // 쪽에 기록되는 것처럼, 그런 판정은 선공/후공과 무관하게 항상 PlayerSide.Me 기준이어야 하기
     // 때문 — OnEndTurnButtonClicked/ShowResult 참고)
+    private GameNetworkManager subscribedNetwork;
+    private System.Action<PlayerSide> networkStart;
+    private System.Action networkTurn, networkCoin, networkDraw, networkDisconnected, networkRematch;
+    private System.Action<int, int> networkSpell;
     private PlayerSide localSide = PlayerSide.Me;
 
     void Start()
@@ -77,7 +78,8 @@ public class GameHUDController : MonoBehaviour
         if (resultPanel != null) resultPanel.SetActive(false); // 평소엔 숨겨두고 게임이 끝날 때만 켬
 
         UpdateCostHealthText();
-        AddLog("게임 시작");
+        var rules = VRGameSession.Game.Rules;
+        AddLog($"게임 시작: 체력 {rules.heroHealth}, 시작 손패 {rules.openingHand}장, 매 턴 {rules.cardsPerTurn}장 드로우");
     }
 
     void Update()
@@ -98,6 +100,8 @@ public class GameHUDController : MonoBehaviour
     [ContextMenu("End Turn 테스트(디버그)")]
     public void OnEndTurnButtonClicked()
     {
+        if (VRGameSession.RequireNetwork && ProductionGameController.Current != null && !ProductionGameController.Current.CanAct) return;
+        if (!VRGameSession.NetworkPlayAllowed) return;
         if (VRGameSession.Game.IsGameOver) return;
 
         var net = GameNetworkManager.Instance;
@@ -122,6 +126,8 @@ public class GameHUDController : MonoBehaviour
     [ContextMenu("후공 동전 사용(이번 턴 코스트 +1)")]
     public void OnCoinCardUsed()
     {
+        if (VRGameSession.RequireNetwork && ProductionGameController.Current != null && !ProductionGameController.Current.CanAct) return;
+        if (!VRGameSession.NetworkPlayAllowed) return;
         if (!VRGameSession.Coin.TryUse(PlayerSide.Me)) return;
         var net = GameNetworkManager.Instance;
         if (net.Connected) net.SendCoinUsed();
@@ -130,6 +136,37 @@ public class GameHUDController : MonoBehaviour
     }
 
     public bool CanUseCoin => VRGameSession.Coin.CanUse(PlayerSide.Me);
+
+    public bool TryUseSpell(int cardId, int targetLane = -1)
+    {
+        if (VRGameSession.RequireNetwork && ProductionGameController.Current != null && !ProductionGameController.Current.CanAct) return false;
+        if (!VRGameSession.NetworkPlayAllowed) return false;
+        if (cardDatabase == null) return false;
+        var card = cardDatabase.GetCardById(cardId);
+        if (!VRGameSession.TryCastPhysicalSpell(card, PlayerSide.Me, targetLane)) return false;
+        var net = GameNetworkManager.Instance;
+        if (net.Connected) net.SendSpellCast(cardId, targetLane);
+        UpdateCostHealthText();
+        return true;
+    }
+
+    [ContextMenu("마법 테스트/지식의두루마리")]
+    public void PreviewDrawSpell() => TryUseSpell(24);
+    [ContextMenu("마법 테스트/수호의축복")]
+    public void PreviewHealSpell() => TryUseSpell(25);
+    [ContextMenu("마법 테스트/심판의낙뢰(양쪽 필드)")]
+    public void PreviewGlobalSpell() => TryUseSpell(26);
+    [ContextMenu("마법 테스트/전쟁의함성")]
+    public void PreviewSweepSpell() => TryUseSpell(27);
+    [ContextMenu("실물 카드 1장 뽑기 확인")]
+    public void ConfirmDrawnCard()
+    {
+        if (VRGameSession.RequireNetwork && ProductionGameController.Current != null && !ProductionGameController.Current.HardwareReady) return;
+        if (!VRGameSession.NetworkPlayAllowed) return;
+        if (!VRGameSession.ConfirmPhysicalDraw(PlayerSide.Me)) return;
+        var net = GameNetworkManager.Instance;
+        if (net.Connected) net.SendDrawConfirmed();
+    }
 
     // 로그 토글 버튼의 OnClick()에 연결(코드에서 AddListener로 자동 연결됨, 인스펙터에서 또 연결할 필요 없음)
     public void ToggleLogPanel()
@@ -153,6 +190,7 @@ public class GameHUDController : MonoBehaviour
     [ContextMenu("재대결 테스트(디버그)")]
     public void OnRematchButtonClicked()
     {
+        if (!VRGameSession.NetworkPlayAllowed) return;
         var net = GameNetworkManager.Instance;
         if (net.Connected) net.SendRematch();
         DoLocalRematch();
@@ -180,6 +218,11 @@ public class GameHUDController : MonoBehaviour
         game.OnFaceHit += side => AddLog(side == PlayerSide.Me ? "내 명치를 맞음" : "상대 명치를 맞음");
         game.OnMinionAttacked += (side, lane) => AddLog($"{SideLabel(side)} {lane + 1}라인 공격");
         game.OnMinionHit += (side, lane) => AddLog($"{SideLabel(side)} {lane + 1}라인 피해");
+        game.OnSpellCast += (side, card) => AddLog($"{SideLabel(side)} 마법 사용: {card.cardName}");
+        game.OnDrawRequested += (side, count) =>
+        {
+            if (side == PlayerSide.Me) AddLog($"실물 카드 {count}장 드로우 요청");
+        };
         game.OnGameOver += winner =>
         {
             AddLog(winner == null ? "무승부" : $"{SideLabel(winner.Value)} 승리");
@@ -192,18 +235,21 @@ public class GameHUDController : MonoBehaviour
     private void SubscribeToNetwork()
     {
         var net = GameNetworkManager.Instance;
+        net.ConfigureMatch(cardDatabase);
+        subscribedNetwork = net;
 
-        net.OnGameStartReceived += side =>
+        net.OnGameStartReceived += networkStart = side =>
         {
             // 코스트 공식(isSecondPlayer)이 네트워크가 정한 진짜 선공과 어긋나지 않도록
             // GameManager를 다시 올바른 선공으로 맞춤 (VRGameSession.ApplyNetworkFirstPlayer 참고)
             VRGameSession.ApplyNetworkFirstPlayer(side);
             SubscribeToGame();
+            if (resultPanel != null) resultPanel.SetActive(false);
             localSide = side;
             AddLog(side == PlayerSide.Me ? "네트워크 연결 - 내가 선공" : "네트워크 연결 - 상대가 선공");
         };
 
-        net.OnEndTurnReceived += () =>
+        net.OnEndTurnReceived += networkTurn = () =>
         {
             // 상대가 이미 자기 턴에서 TrySendEndTurn을 통과한 뒤 보낸 메시지라
             // 여기서 다시 턴 체크 안 하고 그대로 반영함(lockstep)
@@ -211,12 +257,18 @@ public class GameHUDController : MonoBehaviour
         };
 
         net.OnCardPlayedReceived += ApplyOpponentCardPlayed;
-        net.OnCoinUsedReceived += () =>
+        net.OnSpellCastReceived += networkSpell = (id, lane) =>
+        {
+            if (cardDatabase != null && VRGameSession.TryCastPhysicalSpell(cardDatabase.GetCardById(id), PlayerSide.Opponent, lane))
+                AddLog("상대 마법 사용");
+        };
+        net.OnDrawConfirmedReceived += networkDraw = () => VRGameSession.ConfirmPhysicalDraw(PlayerSide.Opponent);
+        net.OnCoinUsedReceived += networkCoin = () =>
         {
             if (VRGameSession.Coin.TryUse(PlayerSide.Opponent)) AddLog("상대 동전 사용");
         };
 
-        net.OnDisconnected += () =>
+        net.OnDisconnected += networkDisconnected = () =>
         {
             // 자동으로 재접속을 시도하긴 하지만(GameNetworkManager.RestartDiscoveryForReconnect),
             // 끊기기 전 보드 상태까지 다시 맞추는 건 아니라서 로그로만 알림 - 필요하면 재접속 후
@@ -224,13 +276,28 @@ public class GameHUDController : MonoBehaviour
             AddLog("연결 끊김 - 재접속 시도 중");
         };
 
-        net.OnRematchReceived += () =>
+        net.OnRematchReceived += networkRematch = () =>
         {
             // 내가 버튼을 눌러서 온 경우(SendRematch 안에서 바로 호출됨)와, 상대가 눌러서
             // 네트워크로 온 경우 둘 다 여기로 들어옴 - DoLocalRematch는 몇 번 더 불려도
             // 안전함(그냥 또 깨끗한 새 게임으로 리셋될 뿐)
             DoLocalRematch();
         };
+    }
+
+    void OnDestroy()
+    {
+        if (logToggleButton != null) logToggleButton.onClick.RemoveListener(ToggleLogPanel);
+        var net = subscribedNetwork;
+        if (net == null) return;
+        net.OnGameStartReceived -= networkStart;
+        net.OnEndTurnReceived -= networkTurn;
+        net.OnCoinUsedReceived -= networkCoin;
+        net.OnDrawConfirmedReceived -= networkDraw;
+        net.OnDisconnected -= networkDisconnected;
+        net.OnRematchReceived -= networkRematch;
+        net.OnSpellCastReceived -= networkSpell;
+        net.OnCardPlayedReceived -= ApplyOpponentCardPlayed;
     }
 
     // 상대가 물리 카드를 냈다는 네트워크 메시지(SlotModelSpawner.TryPlayOnField가 보냄)를 받아서
@@ -260,6 +327,7 @@ public class GameHUDController : MonoBehaviour
         board.currentCost -= data.cost;
 
         int amount = minion.currentAttack;
+        if (data.HasKeyword(CardKeyword.Draw)) game.DrawCards(PlayerSide.Opponent, 1);
         if (data.HasKeyword(CardKeyword.Heal))
         {
             game.ApplyHealToLeftAlly(PlayerSide.Opponent, laneIndex, amount);
@@ -344,8 +412,8 @@ public class GameHUDController : MonoBehaviour
 
         if (healthText != null)
         {
-            int remainingLives = Mathf.Max(0, StartingLives - myBoard.faceHitCount);
-            healthText.text = $"체력\n{remainingLives} / {StartingLives}";
+            int remainingLives = myBoard.HeroHealth;
+            healthText.text = $"체력\n{remainingLives} / {myBoard.maxHeroHealth}";
         }
     }
 }

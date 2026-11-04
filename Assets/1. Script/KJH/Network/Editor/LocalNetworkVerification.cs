@@ -21,13 +21,19 @@ public static class LocalNetworkVerification
         public int starts;
         public readonly List<string> events=new List<string>();
         public readonly List<int> probes=new List<int>();
-        public void Reset(){game=new GameManager(false);game.StartGame(PlayerSide.Me);coin=new SecondPlayerCoin(game);}
+        public readonly HashSet<int> spells=new HashSet<int>();
+        public void Reset(){spells.Clear();game=new GameManager(false, new MatchRuleSet { fatigueOnEmptyDraw = false });game.StartGame(PlayerSide.Me);coin=new SecondPlayerCoin(game);}
         public void Bind(CardDatabase cards)
         {
             Reset();
-            net.OnGameStartReceived+=side=>{game=new GameManager(false);game.StartGame(side);coin=new SecondPlayerCoin(game);starts++;events.Add("start");};
+            net.OnGameStartReceived+=side=>{spells.Clear();game=new GameManager(false, new MatchRuleSet { fatigueOnEmptyDraw = false });game.StartGame(side);coin=new SecondPlayerCoin(game);starts++;events.Add("start");};
             net.OnEndTurnReceived+=()=>game.EndTurn();
             net.OnCoinUsedReceived+=()=>coin.TryUse(PlayerSide.Opponent);
+            net.OnSpellCastReceived+=(id,lane)=>
+            {
+                if(!spells.Add(id))return;
+                Check(game.TryCastSpell(cards.GetCardById(id),PlayerSide.Opponent,lane,consumeHand:false),"Received spell rejected");
+            };
             net.OnRematchReceived+=()=>{Reset();events.Add("reset");};
             net.OnCardPlayedReceived+=(id,lane)=>
             {
@@ -78,6 +84,20 @@ public static class LocalNetworkVerification
             Wait(host,client,()=>first.game.State.CurrentPlayer==PlayerSide.Me,"combat synchronization",5);
             Equal(host,client);Debug.Log("LOCAL_TCP_GAMEPLAY_PASS: cards, mana, coin, turn, combat, face hits");
 
+            first.game.Board.me.currentCost=8;second.game.Board.opponent.currentCost=8;
+            int hpFirst=first.game.Board.me.HeroHealth,hpSecond=first.game.Board.opponent.HeroHealth;
+            Check(first.game.TryCastSpell(cards.GetCardById(26),PlayerSide.Me,consumeHand:false),"Local global spell rejected");
+            first.spells.Add(26);first.net.SendSpellCast(26,-1);
+            Wait(host,client,()=>second.spells.Contains(26),"global spell synchronization",5);
+            Equal(host,client);
+            Check(first.game.Board.me.HeroHealth==hpFirst&&first.game.Board.opponent.HeroHealth==hpSecond,"Global spell damaged hero");
+            Check(first.game.TryCastSpell(cards.GetCardById(25),PlayerSide.Me,consumeHand:false),"Heal spell rejected");
+            first.spells.Add(25);first.net.SendSpellCast(25,-1);
+            Wait(host,client,()=>second.spells.Contains(25),"heal spell synchronization",5);
+            Equal(host,client);
+            first.net.SendSpellCast(26,-1); // A repeated physical-card message must not cast twice.
+            Debug.Log("LOCAL_TCP_MODERN_SPELLS_PASS: symmetric board damage, hero healing, costs and spell messages");
+
             var stream=(NetworkStream)Get(host.net,"stream");
             string payload=string.Concat(Enumerable.Range(1000,300).Select(i=>$"{NetMsg.CardPlayed}|{i}|0\n"));
             byte[] bytes=Encoding.UTF8.GetBytes(payload);
@@ -85,6 +105,7 @@ public static class LocalNetworkVerification
             while(offset<bytes.Length){int count=Math.Min(sizes[index++%sizes.Length],bytes.Length-offset);stream.Write(bytes,offset,count);offset+=count;}
             Wait(host,client,()=>client.probes.Count==300,"fragmented/batched TCP messages",5);
             Check(client.probes.SequenceEqual(Enumerable.Range(1000,300)),"TCP message loss or order mismatch");
+            Equal(host,client);
             Debug.Log("LOCAL_TCP_FRAMING_PASS: 300 split/coalesced messages preserved in order");
 
             for(int i=0;i<12;i++)

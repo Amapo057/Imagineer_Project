@@ -69,6 +69,11 @@ public class DemoTurnController : MonoBehaviour
     {
         gameManager = new GameManager();
         gameManager.OnGameOver += HandleGameOver;
+        gameManager.OnCardDrawn += (side, card) =>
+        {
+            var draw = side == PlayerSide.Me ? myDrawManager : enemyDrawManager;
+            if (draw != null) draw.OnDrawButtonClick(card);
+        };
 
         // 공격·피격 모션 상태 연결: GameManager(순수 로직, MonoBehaviour 아님)가 전투 중
         // "누가/어느 라인에서" 공격했는지, 맞았는지를 이벤트로 쏴주면, 여기서 그 라인에 실제로
@@ -131,10 +136,7 @@ public class DemoTurnController : MonoBehaviour
     // 카드가 나오고, 코스트가 남아 있어도 실제 손패(GameManager 쪽)에는 카드가 없어서 못 내는 버그가 있었음
     public void OnDrawButtonClicked()
     {
-        if (gameManager == null || gameManager.IsGameOver) return;
-
-        PerformDraw(gameManager.State.CurrentPlayer);
-
+        // Natural draws are automatic; clicking cannot grant extra free cards.
         UpdateTurnText();
     }
 
@@ -146,15 +148,7 @@ public class DemoTurnController : MonoBehaviour
     // 카드가 뭔지" 알아내는 로직(hand 맨 뒤 카드 읽기)을 한 곳으로 모음
     private bool PerformDraw(PlayerSide side)
     {
-        if (!gameManager.TryDrawCard(side)) return false; // 덱이 비었거나 손패가 꽉 찼으면 아무 일도 안 일어남
-
-        var board = gameManager.Board.GetBoard(side);
-        CardData drawnCard = board.hand[board.hand.Count - 1];
-
-        DrawManager drawManager = side == PlayerSide.Me ? myDrawManager : enemyDrawManager;
-        if (drawManager != null) drawManager.OnDrawButtonClick(drawnCard);
-
-        return true;
+        return gameManager.DrawCards(side, 1) > 0;
     }
 
     // CardMove가 카드를 필드 슬롯 위에 내려놓을 때 호출.
@@ -322,14 +316,26 @@ public class DemoTurnController : MonoBehaviour
     // 비주얼 카드는 필드에 남지 않고(유닛과 달리 slot.occupyingCard에 안 넣음) 그대로 파괴됨
     private bool TryCastSpell(PlayerBoardState board, CardData playedCard, int handIndex, PlayerSide side, GameObject cardVisual)
     {
-        board.hand.RemoveAt(handIndex);
-        board.currentCost -= playedCard.cost;
+        if (playedCard.HasKeyword(CardKeyword.Remove) && !gameManager.Rules.globalClear)
+        {
+            if (TargetPicker == null) return false;
+            var targets = fieldSlots.Where(s => s != null && !s.IsSpellSlot && s.Side != side
+                && gameManager.Board.GetBoard(s.Side).lanes[s.LaneIndex] != null).ToList();
+            if (targets.Count == 0) return false;
+            TargetPicker.RequestTarget(targets, chosen =>
+            {
+                if (chosen != null) CompleteSpell(playedCard, side, chosen.LaneIndex, cardVisual);
+            });
+            return true;
+        }
+        return CompleteSpell(playedCard, side, -1, cardVisual);
+    }
 
-        NotifyHandCardRemoved(cardVisual);
-        if (cardVisual != null) Destroy(cardVisual);
-
-        ResolveSpellEffect(playedCard, side);
-
+    private bool CompleteSpell(CardData card, PlayerSide side, int target, GameObject visual)
+    {
+        if (!gameManager.TryCastSpell(card, side, target, onConsumed: () => NotifyHandCardRemoved(visual))) return false;
+        if (visual != null) Destroy(visual);
+        SyncDeadMinions();
         UpdateTurnText();
         return true;
     }
@@ -397,47 +403,7 @@ public class DemoTurnController : MonoBehaviour
     // 마법 카드 시전 즉시 발동하는 효과 처리. 유닛의 ResolveBattlecry와 같은 자리인데, 마법은
     // 자기 자신의 공격력이 없어서(카드 자체가 attack=0) 대미지/버프 수치는 전부 GameRules 상수를 씀.
     //
-    // 드로우는 유닛 쪽과 완전히 같은 효과(카드 1장 뽑기)라 그대로 재사용하고, 회복은 이름만 같고
-    // 뜻이 다름(유닛=왼쪽 아군 체력 회복 / 마법=명치 맞은 횟수 1 감소) — 여기서는 마법 전용 뜻으로 처리함.
-    // 제거는 무기와 똑같이 targetPicker로 적 하수인 하나를 고르되 대미지는 고정값(카드 자신의
-    // 공격력이 없으므로). 강화는 대상 선택 없이 바로 자기 필드 전체에 적용됨
-    private void ResolveSpellEffect(CardData playedCard, PlayerSide side)
-    {
-        if (playedCard.HasKeyword(CardKeyword.Draw))
-        {
-            PerformDraw(side);
-        }
-
-        if (playedCard.HasKeyword(CardKeyword.Heal)) // 마법의 "회복" = 명치가 맞은 횟수를 1 줄임
-        {
-            gameManager.ReduceFaceHitCount(side, 1);
-            UpdateTurnText(); // 명치 표시가 UpdateTurnText 쪽에 있어서 바로 화면에 반영되도록
-        }
-
-        if (playedCard.HasKeyword(CardKeyword.Remove))
-        {
-            if (TargetPicker == null) return; // 무기와 동일하게, 대상 선택 창구가 없으면 그냥 무시됨
-
-            // 무기 키워드 타겟팅과 동일한 이유로 !s.IsSpellSlot을 먼저 체크함(마법 슬롯은 lanes[] 인덱싱 대상이 아님)
-            var validTargets = fieldSlots
-                .Where(s => s != null && !s.IsSpellSlot && s.Side != side
-                            && gameManager.Board.GetBoard(s.Side).lanes[s.LaneIndex] != null)
-                .ToList();
-
-            TargetPicker.RequestTarget(validTargets, chosen =>
-            {
-                if (chosen == null) return;
-
-                gameManager.ApplyDamageToLane(chosen.Side, chosen.LaneIndex, GameRules.RemoveSpellDamage);
-                SyncDeadMinions();
-            });
-        }
-
-        if (playedCard.HasKeyword(CardKeyword.Buff))
-        {
-            gameManager.ApplyTurnEndBuffToAllies(side, GameRules.BuffSpellAttackBonus);
-        }
-    }
+    // 마법 효과는 GameManager.TryCastSpell의 공통 규칙으로 처리함.
 
     // 전투 페이즈가 끝난 뒤(EndTurn 직후) 호출. 데이터상 죽어서 lanes[i]가 null이 됐는데
     // 아직 비주얼 카드가 필드에 남아있는 슬롯을 찾아서 그 오브젝트를 파괴함
@@ -508,7 +474,7 @@ public class DemoTurnController : MonoBehaviour
 
         turnText.text =
             $"Turn {gameManager.TurnNumber} — {playerName}'s turn\n" +
-            $"Face hits (Me {gameManager.Board.me.faceHitCount} : Opp {gameManager.Board.opponent.faceHitCount}) / {GameRules.FaceHitThreshold}";
+            $"HP (Me {gameManager.Board.me.HeroHealth} : Opp {gameManager.Board.opponent.HeroHealth}) / {gameManager.Rules.heroHealth}";
 
         // 코스트는 따로 화면 왼쪽 아래에 표시
         if (costText != null)

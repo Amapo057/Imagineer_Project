@@ -14,6 +14,10 @@ public class GameManager
 {
     public GameStateManager State { get; } = new GameStateManager();
     public GameBoardState Board { get; } = new GameBoardState();
+    public MatchRuleSet Rules { get; }
+    public event Action<PlayerSide, CardData> OnCardDrawn;
+    public event Action<PlayerSide, int> OnDrawRequested;
+    public event Action<PlayerSide, CardData> OnSpellCast;
 
     // 게임이 끝났을 때 쏘는 이벤트. 이긴 쪽을 알려주고, 무승부면 null이 넘어옴
     // (무승부는 "둘 다 필드+손+덱에 카드가 한 장도 없을 때 명치 맞은 횟수가 같은 경우"에만 발생 —
@@ -31,6 +35,7 @@ public class GameManager
     public event Action<PlayerSide, int> OnWeaponEquipped;  // 무기를 장착한 쪽과 그 무기의 공격력 (EquipAndSwingWeapon 참고)
 
     private bool isGameOver;
+    private bool skipInitialDraw;
     public bool IsGameOver => isGameOver;
 
     // 지금이 게임 전체에서 몇 번째 턴인지 (선공/후공 턴을 합쳐서 셈). 1이면 "첫 턴 공격 불가" 규칙이 적용됨
@@ -46,8 +51,9 @@ public class GameManager
     // 데모 쪽 동작은 그대로 유지됨)
     private readonly bool resourceExhaustionDrawEnabled;
 
-    public GameManager(bool resourceExhaustionDrawEnabled = true)
+    public GameManager(bool resourceExhaustionDrawEnabled = true, MatchRuleSet rules = null)
     {
+        Rules = rules ?? new MatchRuleSet();
         this.resourceExhaustionDrawEnabled = resourceExhaustionDrawEnabled;
         State.OnPhaseEnter += HandlePhaseEnter;
         State.OnTurnChanged += _ => turnNumber++;
@@ -55,10 +61,11 @@ public class GameManager
 
     // 게임 시작. firstPlayer를 안 정해주면 50%로 랜덤하게 선공을 정함.
     // 시작하자마자 TurnStart 처리(코스트/드로우)까지 끝내고 Main 페이즈에서 대기함
-    public void StartGame(PlayerSide? firstPlayer = null)
+    public void StartGame(PlayerSide? firstPlayer = null, bool dealCards = true)
     {
         isGameOver = false;
         turnNumber = 1;
+        skipInitialDraw = !dealCards;
 
         PlayerSide starter = firstPlayer ?? (UnityEngine.Random.value < 0.5f ? PlayerSide.Me : PlayerSide.Opponent);
         PlayerSide second = starter == PlayerSide.Me ? PlayerSide.Opponent : PlayerSide.Me;
@@ -67,6 +74,14 @@ public class GameManager
         Board.GetBoard(starter).ownTurnCount = 0;
         Board.GetBoard(second).isSecondPlayer = true;
         Board.GetBoard(second).ownTurnCount = 0;
+        Board.me.maxHeroHealth = Board.opponent.maxHeroHealth = Rules.heroHealth;
+        Board.me.heroDamage = Board.opponent.heroDamage = 0;
+        Board.me.fatigueDamage = Board.opponent.fatigueDamage = 0;
+        if (dealCards)
+        {
+            DrawCards(PlayerSide.Me, Rules.openingHand);
+            DrawCards(PlayerSide.Opponent, Rules.openingHand);
+        }
 
         State.StartGame(starter);
 
@@ -132,8 +147,7 @@ public class GameManager
             if (card != null) card.hasAttackedThisTurn = false;
         }
 
-        // 드로우는 더 이상 여기서 자동으로 안 함 — TryDrawCard(side)를 통해 Draw 버튼을
-        // 눌렀을 때만 일어나도록 데모 쪽(DemoTurnController)에서 명시적으로 호출함
+        if (!(skipInitialDraw && turnNumber == 1)) DrawCards(State.CurrentPlayer, Rules.cardsPerTurn);
     }
 
     // 특정 편의 덱에서 카드 한 장을 손패로 가져옴. Draw 버튼 클릭 + 드로우 키워드(유닛/마법 공통)에서 호출됨.
@@ -145,13 +159,81 @@ public class GameManager
         if (isGameOver) return false;
 
         var board = Board.GetBoard(side);
-        if (board.deck.Count == 0) return false;
-        if (board.hand.Count >= GameRules.MaxHandSize) return false;
+        if (board.hand.Count >= Rules.maxHandSize) return false;
+        if (board.deck.Count == 0)
+        {
+            if (Rules.fatigueOnEmptyDraw)
+            {
+                board.heroDamage += ++board.fatigueDamage;
+                CheckGameOver();
+            }
+            return false;
+        }
 
         var drawn = board.deck[0];
         board.deck.RemoveAt(0);
         board.hand.Add(drawn);
+        OnCardDrawn?.Invoke(side, drawn);
         return true;
+    }
+
+    public int DrawCards(PlayerSide side, int count)
+    {
+        if (count > 0 && !isGameOver) OnDrawRequested?.Invoke(side, count);
+        int drawn = 0;
+        for (int i = 0; i < count && !isGameOver; i++)
+            if (TryDrawCard(side)) drawn++;
+        return drawn;
+    }
+
+    public bool TryCastSpell(CardData card, PlayerSide side, int targetLane = -1, bool consumeHand = true, Action onConsumed = null)
+    {
+        if (card == null || card.cardType != CardType.Spell || isGameOver || State.CurrentPlayer != side) return false;
+        var board = Board.GetBoard(side);
+        var enemy = Board.GetOpponentBoard(side);
+        if (board.currentCost < card.cost || (consumeHand && !board.hand.Contains(card))) return false;
+        if (card.HasKeyword(CardKeyword.Remove) && !Rules.globalClear &&
+            (targetLane < 0 || targetLane >= enemy.lanes.Length || enemy.lanes[targetLane] == null)) return false;
+        if (consumeHand) board.hand.Remove(card);
+        board.currentCost -= card.cost;
+        onConsumed?.Invoke();
+        if (card.HasKeyword(CardKeyword.Heal)) ReduceFaceHitCount(side, Rules.healSpellAmount);
+        if (card.HasKeyword(CardKeyword.Draw)) DrawCards(side, card.HasKeyword(CardKeyword.Heal) ? 1 : Rules.drawSpellCards);
+        if (card.HasKeyword(CardKeyword.Remove))
+        {
+            if (Rules.globalClear)
+            {
+                DamageBoard(Board.me, Rules.removeSpellDamage);
+                DamageBoard(Board.opponent, Rules.removeSpellDamage);
+                CheckGameOver();
+            }
+            else ApplyDamageToLane(enemy.side, targetLane, Rules.removeSpellDamage);
+        }
+        if (card.HasKeyword(CardKeyword.Cleave))
+        {
+            for (int i = 0; i < enemy.lanes.Length; i++)
+            {
+                if (enemy.lanes[i] == null) continue;
+                enemy.lanes[i].TakeDamage(Rules.sweepSpellDamage);
+                OnMinionHit?.Invoke(enemy.side, i);
+            }
+            enemy.RemoveDeadCards();
+            CheckGameOver();
+        }
+        if (card.HasKeyword(CardKeyword.Buff)) ApplyTurnEndBuffToAllies(side, Rules.buffSpellAttack);
+        OnSpellCast?.Invoke(side, card);
+        return true;
+    }
+
+    private void DamageBoard(PlayerBoardState board, int amount)
+    {
+        for (int i = 0; i < board.lanes.Length; i++)
+        {
+            if (board.lanes[i] == null) continue;
+            board.lanes[i].TakeDamage(amount);
+            OnMinionHit?.Invoke(board.side, i);
+        }
+        board.RemoveDeadCards();
     }
 
     // 회복 키워드: side편 laneIndex 라인에 막 나온 카드가, 자기 "왼쪽"(laneIndex-1) 아군의 체력을
@@ -224,8 +306,7 @@ public class GameManager
     }
 
     // 마법 "강화" 전용: side편 필드에 지금 나와 있는 아군 하수인 전체의 공격력을 amount만큼 즉시 올림.
-    // "이번 턴이 끝날 때까지"만 유지되는 버프라 CardInstance.tempAttackBonus에 따로 적립해두고,
-    // 그 편의 전투 페이즈(HandleCombat)가 끝나는 시점에 자동으로 원상복구됨
+    // 현재 규칙은 영구 강화. 이전 규칙 비교에서만 tempAttackBonus로 턴 종료 시 복구함.
     public void ApplyTurnEndBuffToAllies(PlayerSide side, int amount)
     {
         if (isGameOver) return;
@@ -235,7 +316,7 @@ public class GameManager
         {
             if (card == null) continue;
             card.currentAttack += amount;
-            card.tempAttackBonus += amount;
+            if (!Rules.permanentBuff) card.tempAttackBonus += amount;
         }
     }
 
@@ -246,7 +327,7 @@ public class GameManager
         if (isGameOver) return;
 
         var board = Board.GetBoard(side);
-        board.faceHitCount = Math.Max(0, board.faceHitCount - amount);
+        board.heroDamage = Math.Max(0, board.heroDamage - amount);
     }
 
     // 전투 페이즈: 현재 턴 플레이어의 4라인이 상대의 같은 라인을 공격.
@@ -259,6 +340,7 @@ public class GameManager
 
         var attackerBoard = Board.GetBoard(attackerSide);
         var defenderBoard = Board.GetOpponentBoard(attackerSide);
+
 
         if (turnNumber != 1)
         {
@@ -286,8 +368,13 @@ public class GameManager
                 }
                 else
                 {
-                    defenderBoard.TakeFaceHit();
+                    defenderBoard.TakeFaceHit(Rules.attackDamageToHero ? attacker.currentAttack : 1);
                     OnFaceHit?.Invoke(defenderSide);
+                    if (Rules.attackDamageToHero)
+                    {
+                        CheckGameOver();
+                        if (isGameOver) break;
+                    }
                 }
 
                 attacker.hasAttackedThisTurn = true;

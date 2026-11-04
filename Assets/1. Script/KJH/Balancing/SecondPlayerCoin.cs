@@ -12,7 +12,8 @@ namespace KJH.Balancing
         public bool IsAvailable(PlayerSide side) => !used[(int)side] && game.Board.GetBoard(side).isSecondPlayer;
 
         public bool CanUse(PlayerSide side) => !game.IsGameOver && game.State.CurrentPlayer == side &&
-            IsAvailable(side) && game.Board.GetBoard(side).currentCost < GameRules.MaxCost;
+            IsAvailable(side) && game.Board.GetBoard(side).currentCost <
+                GameRules.MaxCost + (game.Rules.coinExceedsCap ? 1 : 0);
 
         public bool TryUse(PlayerSide side)
         {
@@ -27,7 +28,8 @@ namespace KJH.Balancing
         {
             var board = game.Board.GetBoard(side);
             bool bonus = used[(int)side] && usedOnOwnTurn[(int)side] == board.ownTurnCount;
-            return System.Math.Min(GameRules.MaxCost, board.maxCost + (bonus ? 1 : 0));
+            return System.Math.Min(GameRules.MaxCost + (game.Rules.coinExceedsCap ? 1 : 0),
+                board.maxCost + (bonus ? 1 : 0));
         }
     }
 }

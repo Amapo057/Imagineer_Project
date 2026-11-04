@@ -1,10 +1,11 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class AnchorManager : MonoBehaviour
 {
     [SerializeField] private GameObject fieldRoot;
     [SerializeField] private VisualOffset visualOffset;
     private OVRSpatialAnchor spatialAnchor;
+    public bool IsReady { get; private set; }
 
     // 테이블 테스트하기 편하게 약간 앞으로 밈
     private Vector3 platePosition = new Vector3(0f, 0f, 0.2f);
@@ -26,5 +27,6 @@ public class AnchorManager : MonoBehaviour
         fieldRoot.transform.localPosition = Vector3.zero;
         fieldRoot.transform.localRotation = Quaternion.identity;
         visualOffset.OffsetAdjustment(platePosition, plateRotation);
+        IsReady = true;
     }
 }

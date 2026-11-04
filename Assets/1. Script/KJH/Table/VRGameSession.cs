@@ -1,4 +1,5 @@
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// 씬 전체가 공유하는 단 하나의 GameManager 인스턴스를 들고 있는 곳.
@@ -8,8 +9,72 @@ using UnityEngine;
 /// </summary>
 public static class VRGameSession
 {
+    public static bool RequireNetwork { get; set; }
+    public static bool NetworkReady { get; set; }
+    public static bool NetworkPlayAllowed => !RequireNetwork || (NetworkReady && GameNetworkManager.Instance.Connected);
     private static GameManager instance;
     private static KJH.Balancing.SecondPlayerCoin coin;
+    private static readonly HashSet<int> usedPhysicalSpells = new HashSet<int>();
+    private static readonly int[] pendingDraws = new int[2];
+    private static readonly int[] allocatedDraws = new int[2];
+    private static readonly int[] confirmedDraws = new int[2];
+    private static readonly int[] deferredFatigue = new int[2];
+
+    private static void CreateGame(PlayerSide firstPlayer)
+    {
+        usedPhysicalSpells.Clear();
+        System.Array.Clear(pendingDraws, 0, 2);
+        System.Array.Clear(allocatedDraws, 0, 2);
+        System.Array.Clear(confirmedDraws, 0, 2);
+        System.Array.Clear(deferredFatigue, 0, 2);
+        // The physical deck is accounted by draw requests below, not a digital deck.
+        instance = new GameManager(resourceExhaustionDrawEnabled: false,
+            rules: new MatchRuleSet { fatigueOnEmptyDraw = false });
+        instance.OnDrawRequested += (side, count) =>
+        {
+            int i = (int)side;
+            int allowed = System.Math.Min(count, GameRules.DeckSize - allocatedDraws[i]);
+            pendingDraws[i] += allowed;
+            allocatedDraws[i] += allowed;
+            deferredFatigue[i] += count - allowed;
+            ApplyConfirmedFatigue(side);
+        };
+        instance.StartGame(firstPlayer);
+        coin = new KJH.Balancing.SecondPlayerCoin(instance);
+    }
+
+    public static int PendingPhysicalDraws(PlayerSide side) { var game = Game; return pendingDraws[(int)side]; }
+    public static bool ConfirmPhysicalDraw(PlayerSide side)
+    {
+        int i = (int)side;
+        if (Game.IsGameOver || pendingDraws[i] <= 0) return false;
+        pendingDraws[i]--;
+        confirmedDraws[i]++;
+        ApplyConfirmedFatigue(side);
+        return true;
+    }
+
+    private static void ApplyConfirmedFatigue(PlayerSide side)
+    {
+        int i = (int)side;
+        if (confirmedDraws[i] < GameRules.DeckSize) return;
+        var board = instance.Board.GetBoard(side);
+        while (deferredFatigue[i] > 0 && !instance.IsGameOver)
+        {
+            deferredFatigue[i]--;
+            board.heroDamage += ++board.fatigueDamage;
+            instance.CheckGameOver();
+        }
+    }
+
+    public static bool TryCastPhysicalSpell(CardData card, PlayerSide side, int lane = -1)
+    {
+        var game = Game;
+        if (card == null || usedPhysicalSpells.Contains((int)side * 100 + card.cardId)) return false;
+        if (!game.TryCastSpell(card, side, lane, consumeHand: false)) return false;
+        usedPhysicalSpells.Add((int)side * 100 + card.cardId);
+        return true;
+    }
     public static KJH.Balancing.SecondPlayerCoin Coin
     {
         get
@@ -31,10 +96,9 @@ public static class VRGameSession
                 // 카드를 안 낸 상태에서 End Turn만 눌러도 그 자리에서 무승부로 끝나버림 — VR에서는
                 // 이 조건 자체가 의미가 없으므로 꺼서 생성함. 승패는 명치를 FaceHitThreshold번
                 // 맞았을 때만 결정됨
-                instance = new GameManager(resourceExhaustionDrawEnabled: false);
+                CreateGame(PlayerSide.Me);
                 // 상대 쪽은 아직 물리 슬롯이 없어서(SlotModelSpawner 참고) 늘 내가 선공으로 고정해둠
                 // — 나중에 상대쪽 물리 슬롯/턴 전환 UI가 따로 생기면 이 부분을 다시 검토하면 됨
-                instance.StartGame(PlayerSide.Me);
             }
             return instance;
         }
@@ -49,9 +113,7 @@ public static class VRGameSession
     {
         // A network start is a fresh match; retain no costs or lanes from the
         // provisional solo start or a previous round.
-        instance = new GameManager(resourceExhaustionDrawEnabled: false);
-        instance.StartGame(firstPlayer);
-        coin = new KJH.Balancing.SecondPlayerCoin(Game);
+        CreateGame(firstPlayer);
     }
 
     // 재대결(재시작) 전용 - GameManager.StartGame()은 턴/선공만 다시 정하고 라인에 놓인 카드나
@@ -61,8 +123,6 @@ public static class VRGameSession
     // 다시 호출되어 선공이 올바르게 재조정됨(일단 Me로 시작해두는 이유는 솔로 플레이와 동일)
     public static void ResetGame()
     {
-        coin = null;
-        instance = new GameManager(resourceExhaustionDrawEnabled: false);
-        instance.StartGame(PlayerSide.Me);
+        CreateGame(PlayerSide.Me);
     }
 }

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using OpenCvSharp;
 using System.Collections.Generic;
 using TMPro;
@@ -106,12 +106,13 @@ public class MarkerWorldPos : MonoBehaviour
         return (worldPosition, worldRotation);
     }
 
+    public bool LocalPlayerOnPositiveSide { get; set; }
     private bool isEnemyField(Vector3 worldPosition)
     {
         // 중심 기준으로 좌표 변경
         Vector3 localPosition = fieldRoot.transform.InverseTransformPoint(worldPosition);
         // 해당 축 기준으로 중앙 너머인지 여부 전달
-        return localPosition.z > 0f;
+        return LocalPlayerOnPositiveSide ? localPosition.z < 0f : localPosition.z > 0f;
     }
 
     // 원하는 id의 마커 정보 반환

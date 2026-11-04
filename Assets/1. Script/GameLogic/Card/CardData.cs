@@ -18,7 +18,7 @@ public enum CardKeyword
 
     // 아래 둘은 마법 카드 전용 키워드. Draw는 유닛 쪽과 완전히 같은 뜻(카드 1장 뽑기)이라 플래그를
     // 재사용하지만, Heal은 마법에서는 뜻이 다름 — "왼쪽 아군 회복"이 아니라 "명치가 맞은 횟수를 1
-    // 줄임"으로 처리됨(DemoTurnController.ResolveSpellEffect 참고, 카드타입으로 이미 분기되므로 안전함)
+    // 회복은 마법에서 영웅 체력 회복으로 처리됨(GameManager.TryCastSpell 참고).
     Remove       = 1 << 8, // 제거 — 마법 전용. 지정한 적 하수인에게 고정 피해(GameRules.RemoveSpellDamage)
     Buff         = 1 << 9, // 강화 — 마법 전용. 이번 턴이 끝날 때까지 아군 하수인 전체 공격력 증가(GameRules.BuffSpellAttackBonus)
 }

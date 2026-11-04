@@ -1,0 +1,136 @@
+using System;
+using System.Reflection;
+using UnityEditor;
+using UnityEngine;
+
+namespace KJH.Balancing
+{
+    public static class ModernRuleVerification
+    {
+        public static void CompleteChecks()
+        {
+            Verify();
+            BalanceIntegrationVerification.Verify();
+            LocalNetworkVerification.Run();
+        }
+        public static void FinalizeV2()
+        {
+            CompleteChecks();
+            BalanceSimulation.RunBatch();
+        }
+        static void Check(bool value,string message){if(!value)throw new Exception(message);}
+        static CardData Card(int attack=1,int health=2)
+        {
+            var c=ScriptableObject.CreateInstance<CardData>();c.attack=attack;c.health=health;c.cost=1;return c;
+        }
+        static GameManager Isolated()
+        {
+            var g=new GameManager(false,new MatchRuleSet{openingHand=0,cardsPerTurn=0,fatigueOnEmptyDraw=false});
+            g.StartGame(PlayerSide.Me);return g;
+        }
+        public static void Verify()
+        {
+            var body=Card();var g=new GameManager();int drawn=0;g.OnCardDrawn+=(s,c)=>drawn++;
+            for(int i=0;i<20;i++){g.Board.me.deck.Add(body);g.Board.opponent.deck.Add(body);}
+            g.StartGame(PlayerSide.Me);
+            Check(g.Board.me.hand.Count==7&&g.Board.opponent.hand.Count==6&&drawn==13,"Opening 6 + automatic 1 draw incorrect");
+            g.EndTurn();
+            Check(g.Board.opponent.hand.Count==7&&drawn==14,"Turn draw incorrect");
+            Check(g.Board.me.HeroHealth==20&&g.Board.opponent.HeroHealth==20,"Initial HP must be 20");
+            g.DrawCards(PlayerSide.Me,20);
+            Check(g.Board.me.hand.Count==12&&g.Board.me.deck.Count==8,"Hand cap must be 12 without discarding deck cards");
+
+            foreach(int attack in new[]{1,7})
+            {
+                var game=Isolated();game.EndTurn();var unit=Card(attack,3);
+                game.Board.opponent.lanes[0]=new CardInstance(unit,PlayerSide.Opponent);game.EndTurn();
+                Check(game.Board.me.HeroHealth==20-attack,"Hero must take attack damage");
+                UnityEngine.Object.DestroyImmediate(unit);
+            }
+
+            var draw=Card();draw.cardType=CardType.Spell;draw.keywords=CardKeyword.Draw;
+            var spellGame=Isolated();spellGame.Board.me.currentCost=8;
+            spellGame.Board.me.hand.Add(draw);
+            for(int i=0;i<6;i++)spellGame.Board.me.deck.Add(body);
+            string sequence="";spellGame.OnCardDrawn+=(s,c)=>sequence+="D";
+            Check(spellGame.TryCastSpell(draw,PlayerSide.Me,onConsumed:()=>sequence+="C"),"Draw spell rejected");
+            Check(spellGame.Board.me.hand.Count==3&&sequence=="CDDD","Spell draws three after consuming card");
+            var heal=Card();heal.cardType=CardType.Spell;heal.keywords=CardKeyword.Heal|CardKeyword.Draw;
+            spellGame.Board.me.heroDamage=10;spellGame.Board.me.hand.Add(heal);
+            Check(spellGame.TryCastSpell(heal,PlayerSide.Me)&&spellGame.Board.me.HeroHealth==15&&spellGame.Board.me.hand.Count==4,"Heal five + draw one incorrect");
+            spellGame.ReduceFaceHitCount(PlayerSide.Me,99);
+            Check(spellGame.Board.me.HeroHealth==20,"Heal must cap at starting health");
+
+            var clear=Card();clear.cardType=CardType.Spell;clear.keywords=CardKeyword.Remove;
+            var field=Isolated();field.Board.me.currentCost=8;field.Board.me.hand.Add(clear);
+            var big=Card(2,8);
+            foreach(var side in new[]{PlayerSide.Me,PlayerSide.Opponent})
+            {
+                var b=field.Board.GetBoard(side);b.lanes[0]=new CardInstance(body,side);b.lanes[1]=new CardInstance(big,side);
+                b.heroDamage=4;
+            }
+            Check(field.TryCastSpell(clear,PlayerSide.Me),"Global spell should need no selected target");
+            foreach(var b in new[]{field.Board.me,field.Board.opponent})
+                Check(b.lanes[0]==null&&b.lanes[1].currentHealth==4&&b.HeroHealth==16,"Global spell must damage both fields by 4, never heroes");
+
+            var buffGame=Isolated();var buff=Card();buff.cardType=CardType.Spell;buff.keywords=CardKeyword.Buff;
+            buffGame.Board.me.currentCost=8;buffGame.Board.me.hand.Add(buff);
+            buffGame.Board.me.lanes[0]=new CardInstance(big,PlayerSide.Me);
+            Check(buffGame.TryCastSpell(buff,PlayerSide.Me),"Buff spell rejected");
+            buffGame.EndTurn();buffGame.EndTurn();
+            Check(buffGame.Board.me.lanes[0].currentAttack==big.attack+3&&buffGame.Board.me.lanes[0].tempAttackBonus==0,"Buff must survive turn changes");
+            buffGame.Board.me.lanes[1]=new CardInstance(big,PlayerSide.Me);
+            Check(buffGame.Board.me.lanes[1].currentAttack==big.attack,"Future summons must not inherit buff");
+
+            var fatigue=new GameManager(false,new MatchRuleSet{openingHand=0,cardsPerTurn=0});fatigue.StartGame(PlayerSide.Me);
+            fatigue.DrawCards(PlayerSide.Me,2);
+            Check(fatigue.Board.me.HeroHealth==17&&fatigue.Board.me.fatigueDamage==2,"Empty deck draw should deal fatigue 1 then 2");
+            fatigue.DrawCards(PlayerSide.Me,2);
+            Check(fatigue.Board.me.HeroHealth==10&&fatigue.Board.me.fatigueDamage==4,"Fatigue must escalate per attempted card");
+
+            VRGameSession.ResetGame();
+            Check(VRGameSession.Game.Board.me.HeroHealth==20&&VRGameSession.PendingPhysicalDraws(PlayerSide.Me)==7,"Physical deck opening allocation incorrect");
+            VRGameSession.Game.DrawCards(PlayerSide.Me,14);
+            Check(VRGameSession.Game.Board.me.HeroHealth==20,"Unconfirmed physical draws must not cause fatigue");
+            for(int i=0;i<20;i++)VRGameSession.ConfirmPhysicalDraw(PlayerSide.Me);
+            Check(VRGameSession.Game.Board.me.HeroHealth==19,"Physical draw requests beyond 20 must produce fatigue");
+            VRGameSession.ResetGame();
+            VerifyPhysicalSpellInput();
+            Debug.Log("MODERN_RULE_VERIFICATION_SUCCESS: HP20, opening6, draw1, hand12, drawSpell3, clearBoth4, permanentBuff, fatigue, physical quota");
+            foreach(var c in new[]{body,draw,heal,clear,big,buff})UnityEngine.Object.DestroyImmediate(c);
+        }
+
+        static void VerifyPhysicalSpellInput()
+        {
+            var game=VRGameSession.Game;game.Board.me.currentCost=8;game.Board.me.heroDamage=10;
+            var body=Card(2,8);
+            game.Board.me.lanes[0]=new CardInstance(body,PlayerSide.Me);
+            game.Board.opponent.lanes[0]=new CardInstance(body,PlayerSide.Opponent);
+            var go=new GameObject("Physical spell input verification");go.SetActive(false);
+            var slot=go.AddComponent<SlotModelSpawner>();
+            var visual=new GameObject("Existing friendly model");visual.transform.SetParent(go.transform);
+            var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+            void Set(string field,object value)=>typeof(SlotModelSpawner).GetField(field,flags).SetValue(slot,value);
+            Set("cardDatabase",AssetDatabase.LoadAssetAtPath<CardDatabase>("Assets/2. Data/Card/CardDatabase.asset"));
+            Set("side",PlayerSide.Me);Set("laneIndex",0);Set("confirmedCardId",1);Set("spawnedModel",visual);
+            var confirm=typeof(SlotModelSpawner).GetMethod("Confirm",flags);
+            // Provide an inactive network fixture; Instance must not auto-create a persistent object in EditMode.
+            var networkObject=new GameObject("Physical spell network fixture");networkObject.SetActive(false);
+            var network=networkObject.AddComponent<GameNetworkManager>();
+            var instanceField=typeof(GameNetworkManager).GetField("instance",BindingFlags.Static|BindingFlags.NonPublic);
+            var previous=instanceField.GetValue(null);instanceField.SetValue(null,network);
+            confirm.Invoke(slot,new object[]{25});
+            Check(game.Board.me.HeroHealth==15&&game.Board.me.currentCost==7,"Marker-confirmed heal spell failed");
+            Check((int)typeof(SlotModelSpawner).GetField("confirmedCardId",flags).GetValue(slot)==1&&visual!=null,"Spell replaced friendly model");
+            confirm.Invoke(slot,new object[]{25});
+            Check(game.Board.me.currentCost==7,"Repeated spell detection consumed twice");
+            confirm.Invoke(slot,new object[]{26});
+            Check(game.Board.me.lanes[0].currentHealth==4&&game.Board.opponent.lanes[0].currentHealth==4,"Marker-confirmed global spell failed");
+            UnityEngine.Object.DestroyImmediate(go);UnityEngine.Object.DestroyImmediate(body);
+            UnityEngine.Object.DestroyImmediate(networkObject);instanceField.SetValue(null,previous);
+            VRGameSession.ResetGame();
+            Debug.Log("MODERN_PHYSICAL_SPELL_INPUT_VERIFIED: existing slot confirmation routes spells, preserves unit visual, rejects duplicates");
+        }
+
+    }
+}

@@ -1,0 +1,248 @@
+{
+    "build": "2026-11-03 08:40:12 UTC",
+    "cards": [
+        {
+            "id": 1,
+            "cost": 1,
+            "attack": 1,
+            "health": 1,
+            "type": 0,
+            "keywords": 8,
+            "name": "공용-정찰다람쥐"
+        },
+        {
+            "id": 2,
+            "cost": 1,
+            "attack": 1,
+            "health": 1,
+            "type": 0,
+            "keywords": 8,
+            "name": "공용-이끼슬라임"
+        },
+        {
+            "id": 3,
+            "cost": 2,
+            "attack": 2,
+            "health": 3,
+            "type": 0,
+            "keywords": 0,
+            "name": "공용-버섯정령"
+        },
+        {
+            "id": 4,
+            "cost": 2,
+            "attack": 2,
+            "health": 2,
+            "type": 0,
+            "keywords": 1,
+            "name": "공용-가시고슴도치"
+        },
+        {
+            "id": 5,
+            "cost": 2,
+            "attack": 2,
+            "health": 4,
+            "type": 0,
+            "keywords": 0,
+            "name": "공용-바위골렘"
+        },
+        {
+            "id": 6,
+            "cost": 2,
+            "attack": 1,
+            "health": 3,
+            "type": 0,
+            "keywords": 0,
+            "name": "공용-치유나무정령"
+        },
+        {
+            "id": 7,
+            "cost": 2,
+            "attack": 3,
+            "health": 2,
+            "type": 0,
+            "keywords": 0,
+            "name": "공용-늪지트롤"
+        },
+        {
+            "id": 8,
+            "cost": 2,
+            "attack": 1,
+            "health": 2,
+            "type": 0,
+            "keywords": 64,
+            "name": "공용-떠돌이석궁병"
+        },
+        {
+            "id": 9,
+            "cost": 2,
+            "attack": 2,
+            "health": 1,
+            "type": 0,
+            "keywords": 128,
+            "name": "공용-폭풍그리핀"
+        },
+        {
+            "id": 10,
+            "cost": 1,
+            "attack": 1,
+            "health": 1,
+            "type": 0,
+            "keywords": 8,
+            "name": "인간-견습사서"
+        },
+        {
+            "id": 11,
+            "cost": 2,
+            "attack": 2,
+            "health": 3,
+            "type": 0,
+            "keywords": 1,
+            "name": "인간-방패수습기사"
+        },
+        {
+            "id": 12,
+            "cost": 2,
+            "attack": 2,
+            "health": 2,
+            "type": 0,
+            "keywords": 0,
+            "name": "인간-신관"
+        },
+        {
+            "id": 13,
+            "cost": 3,
+            "attack": 3,
+            "health": 8,
+            "type": 0,
+            "keywords": 0,
+            "name": "인간-왕국보병"
+        },
+        {
+            "id": 14,
+            "cost": 2,
+            "attack": 3,
+            "health": 2,
+            "type": 0,
+            "keywords": 0,
+            "name": "인간-숙련된궁수"
+        },
+        {
+            "id": 15,
+            "cost": 4,
+            "attack": 3,
+            "health": 4,
+            "type": 0,
+            "keywords": 64,
+            "name": "인간-포병지휘관"
+        },
+        {
+            "id": 16,
+            "cost": 4,
+            "attack": 2,
+            "health": 9,
+            "type": 0,
+            "keywords": 0,
+            "name": "인간-성기사단장"
+        },
+        {
+            "id": 17,
+            "cost": 1,
+            "attack": 1,
+            "health": 1,
+            "type": 0,
+            "keywords": 8,
+            "name": "악마-속삭이는임프"
+        },
+        {
+            "id": 18,
+            "cost": 2,
+            "attack": 2,
+            "health": 2,
+            "type": 0,
+            "keywords": 128,
+            "name": "악마-화염박쥐"
+        },
+        {
+            "id": 19,
+            "cost": 2,
+            "attack": 2,
+            "health": 1,
+            "type": 0,
+            "keywords": 64,
+            "name": "악마-저주받은석궁병"
+        },
+        {
+            "id": 20,
+            "cost": 3,
+            "attack": 3,
+            "health": 3,
+            "type": 0,
+            "keywords": 1,
+            "name": "악마-가시지옥견"
+        },
+        {
+            "id": 21,
+            "cost": 3,
+            "attack": 4,
+            "health": 3,
+            "type": 0,
+            "keywords": 0,
+            "name": "악마-핏빛광전사"
+        },
+        {
+            "id": 22,
+            "cost": 4,
+            "attack": 5,
+            "health": 4,
+            "type": 0,
+            "keywords": 0,
+            "name": "악마-흡혈박쥐군주"
+        },
+        {
+            "id": 23,
+            "cost": 4,
+            "attack": 8,
+            "health": 3,
+            "type": 0,
+            "keywords": 0,
+            "name": "악마-지옥불악마"
+        },
+        {
+            "id": 24,
+            "cost": 1,
+            "attack": 0,
+            "health": 0,
+            "type": 1,
+            "keywords": 8,
+            "name": "마법-지식의두루마리"
+        },
+        {
+            "id": 25,
+            "cost": 1,
+            "attack": 0,
+            "health": 0,
+            "type": 1,
+            "keywords": 10,
+            "name": "마법-수호의축복"
+        },
+        {
+            "id": 26,
+            "cost": 1,
+            "attack": 0,
+            "health": 0,
+            "type": 1,
+            "keywords": 256,
+            "name": "마법-심판의낙뢰"
+        },
+        {
+            "id": 27,
+            "cost": 1,
+            "attack": 0,
+            "health": 0,
+            "type": 1,
+            "keywords": 512,
+            "name": "마법-전쟁의함성"
+        }
+    ]
+}

@@ -18,7 +18,7 @@ MonoBehaviour:
   cardClass: {fileID: 0}
   description: 
   cost: 2
-  attack: 4
+  attack: 3
   health: 2
   keywords: 0
   hologramPrefab: {fileID: 9196450807297602883, guid: ea243c5275e0cc84db283fd6d50652b7, type: 3}

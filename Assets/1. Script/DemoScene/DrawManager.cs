@@ -42,23 +42,23 @@ public class DrawManager : MonoBehaviour
     // 꽉 찼는지) 판단은 GameManager.TryDrawCard가 이미 끝낸 뒤에 호출됨
     public void OnDrawButtonClick(CardData data)
     {
-        // 손패 꽉 찼으면 안 뽑기. 씬에 배치된 손패 슬롯 개수(slotPositions.Length)와 디자인 규칙상
-        // 손패 최대 장수(GameRules.MaxHandSize) 중 더 작은 쪽을 진짜 한도로 씀 — 씬에 슬롯이
-        // 실수로 더 많이/적게 있어도 항상 안전하게 동작하도록
-        int effectiveLimit = Mathf.Min(slotPositions.Length, GameRules.MaxHandSize);
+        // 손패 상한까지 표시하며, 씬에 없는 추가 위치는 기존 간격으로 연장함.
+        int effectiveLimit = slotPositions.Length == 0 ? 0 : GameRules.MaxHandSize;
         if (handCards.Count >= effectiveLimit)
         {
             return;
         }
 
         GameObject card = Instantiate(cardPrefabs, transform.position, Quaternion.identity);
+        // Demo cards are mouse-controlled; marker dependencies are injected only in VR.
+        foreach (var marker in card.GetComponentsInChildren<TrackingMarker>(true)) marker.enabled = false;
 
         var view = card.GetComponent<CardView>();
         if (view != null) view.SetCardData(data);
 
         handCards.Add(card.transform);
 
-        Vector3 targetPosition = slotPositions[handCards.Count - 1].position;
+        Vector3 targetPosition = HandPosition(handCards.Count - 1);
         StartCoroutine(MoveCard(card.transform, targetPosition));
     }
 
@@ -76,8 +76,18 @@ public class DrawManager : MonoBehaviour
 
         for (int i = index; i < handCards.Count; i++)
         {
-            StartCoroutine(MoveCard(handCards[i], slotPositions[i].position));
+            StartCoroutine(MoveCard(handCards[i], HandPosition(i)));
         }
+    }
+
+    // Extend the existing row at runtime when the hand cap exceeds authored slots.
+    private Vector3 HandPosition(int index)
+    {
+        if (index < slotPositions.Length) return slotPositions[index].position;
+        int last = slotPositions.Length - 1;
+        Vector3 step = last > 0 ? slotPositions[last].position - slotPositions[last - 1].position
+            : slotPositions[0].right * 0.15f;
+        return slotPositions[last].position + step * (index - last);
     }
 
     private IEnumerator MoveCard(Transform card, Vector3 targetPosition)

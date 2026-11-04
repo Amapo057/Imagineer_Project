@@ -16,9 +16,9 @@ MonoBehaviour:
   cardName: "\uB9C8\uBC95-\uC218\uD638\uC758\uCD95\uBCF5"
   cardType: 1
   cardClass: {fileID: 0}
-  description: "\uBA85\uCE58\uAC00 \uB9DE\uC740 \uD69F\uC218\uB97C 1 \uC904\uC785\uB2C8\uB2E4"
-  cost: 2
+  description: "\uc601\uc6c5 \uccb4\ub825\uc744 5 \ud68c\ubcf5\ud558\uace0 \uce74\ub4dc 1\uc7a5\uc744 \ubf51\uc2b5\ub2c8\ub2e4"
+  cost: 1
   attack: 0
   health: 0
-  keywords: 2
+  keywords: 10
   hologramPrefab: {fileID: 0}

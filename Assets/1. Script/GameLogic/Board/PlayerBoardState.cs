@@ -24,8 +24,12 @@ public class PlayerBoardState
     public int currentCost;
     public int maxCost;
 
-    // 명치 체력은 데미지 총합이 아니라 "맞은 횟수"로 취급
-    public int faceHitCount;
+    public int maxHeroHealth = GameRules.StartingHeroHealth;
+    public int heroDamage;
+    public int fatigueDamage;
+    public int HeroHealth => Math.Max(0, maxHeroHealth - heroDamage);
+    // Compatibility for older scene/debug code; this now represents damage, not hits.
+    public int faceHitCount { get => heroDamage; set => heroDamage = value; }
 
     // 지금 장착 중인 무기의 공격력(무기 키워드 전용). 장착과 동시에 바로 휘둘러 소모되므로
     // (GameManager.EquipAndSwingWeapon 참고) 평소엔 거의 항상 0이고, 휘두르는 그 순간에만
@@ -56,14 +60,14 @@ public class PlayerBoardState
         return true;
     }
 
-    // 명치를 한 대 맞음 (전투 페이즈에서 방어할 카드가 없을 때 호출됨)
-    public void TakeFaceHit()
+    // 정면에 방어 유닛이 없으면 공격력만큼 영웅 피해를 받음.
+    public void TakeFaceHit(int damage = 1)
     {
-        faceHitCount++;
+        heroDamage += Math.Max(0, damage);
     }
 
-    // 명치를 GameRules.FaceHitThreshold번 맞으면 패배
-    public bool IsDefeated => faceHitCount >= GameRules.FaceHitThreshold;
+    // 누적 피해가 시작 체력에 도달하면 패배.
+    public bool IsDefeated => heroDamage >= maxHeroHealth;
 
     // 필드(4라인), 손패, 덱까지 전부 카드가 한 장도 없는지 여부.
     // "둘 다 이 상태면 명치를 덜 맞은 쪽이 승리" 규칙에서 사용 (GameManager.CheckGameOver 참고).

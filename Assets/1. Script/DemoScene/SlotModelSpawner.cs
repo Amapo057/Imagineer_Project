@@ -154,6 +154,17 @@ public class SlotModelSpawner : MonoBehaviour
     private void Confirm(int cardId)
     {
         isPending = false;
+        var card = cardDatabase != null ? cardDatabase.GetCardById(cardId) : null;
+        if (card != null && card.cardType == CardType.Spell)
+        {
+            // A spell may be placed over a friendly unit without replacing its model.
+            if (side == PlayerSide.Me && VRGameSession.TryCastPhysicalSpell(card, side))
+            {
+                var net = GameNetworkManager.Instance;
+                if (net.Connected) net.SendSpellCast(cardId, -1);
+            }
+            return;
+        }
         confirmedCardId = cardId;
         SpawnModel(cardId);
         TryPlayOnField(cardId);
@@ -238,6 +249,7 @@ public class SlotModelSpawner : MonoBehaviour
         // 드로우는 손패가 없어서 의미가 없어 생략하고, 무기는 적 하수인을 지목할 VR용 입력
         // 방식이 아직 없어서(IFieldTargetPicker의 VR 구현이 없음) 지금은 그냥 보류함
         int amount = minion.currentAttack;
+        if (data.HasKeyword(CardKeyword.Draw)) game.DrawCards(side, 1);
         if (data.HasKeyword(CardKeyword.Heal))
         {
             game.ApplyHealToLeftAlly(side, laneIndex, amount);

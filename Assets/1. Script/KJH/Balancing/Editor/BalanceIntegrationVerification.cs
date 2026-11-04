@@ -18,7 +18,7 @@ namespace KJH.Balancing
 
         public static void Verify()
         {
-            var a=new GameManager(false);var b=new GameManager(false);
+            var a=new GameManager(false, new MatchRuleSet { fatigueOnEmptyDraw = false });var b=new GameManager(false, new MatchRuleSet { fatigueOnEmptyDraw = false });
             a.StartGame(PlayerSide.Me);b.StartGame(PlayerSide.Opponent);
             var coinA=new SecondPlayerCoin(a);var coinB=new SecondPlayerCoin(b);
             Require(!coinA.IsAvailable(PlayerSide.Me) && coinB.IsAvailable(PlayerSide.Me),"Only second player gets a coin");
@@ -44,11 +44,12 @@ namespace KJH.Balancing
             Require(b.Board.me.currentCost==2 && coinB.DisplayCapacity(PlayerSide.Me)==2,"Bonus must expire on next own turn");
             Require(!coinB.IsAvailable(PlayerSide.Me),"Spent coin must stay spent");
 
-            var capped=new GameManager(false);capped.StartGame(PlayerSide.Me);capped.EndTurn();
+            var capped=new GameManager(false, new MatchRuleSet { fatigueOnEmptyDraw = false });capped.StartGame(PlayerSide.Me);capped.EndTurn();
             var capCoin=new SecondPlayerCoin(capped);capped.Board.opponent.currentCost=GameRules.MaxCost;
-            Require(!capCoin.TryUse(PlayerSide.Opponent) && capCoin.IsAvailable(PlayerSide.Opponent),"Cap must not consume coin");
-            capped.Board.opponent.currentCost--;
-            Require(capCoin.TryUse(PlayerSide.Opponent) && capped.Board.opponent.currentCost==GameRules.MaxCost,"Coin reaches but never exceeds cap");
+            Require(capCoin.TryUse(PlayerSide.Opponent) && capped.Board.opponent.currentCost==9,"Coin may exceed base cap by one");
+            Require(!capCoin.TryUse(PlayerSide.Opponent),"Coin still works only once above base cap");
+            capped.Board.opponent.maxCost=8;
+            Require(capCoin.DisplayCapacity(PlayerSide.Opponent)==9,"HUD capacity must include temporary coin above base cap");
             capped.Board.me.faceHitCount=GameRules.FaceHitThreshold;capped.CheckGameOver();
             Require(!capCoin.TryUse(PlayerSide.Opponent),"No coin use after game over");
 
@@ -70,6 +71,14 @@ namespace KJH.Balancing
                 Require(card.cost==stat.cost && card.attack==stat.attack && card.health==stat.health,"Card asset mismatch "+stat.id);
             }
             Debug.Log("BALANCE_CARD_ASSETS_VERIFIED: 27 cards match proposed stats");
+            var database=AssetDatabase.LoadAssetAtPath<CardDatabase>("Assets/2. Data/Card/CardDatabase.asset");
+            Require(database.GetCardById(2).HasKeyword(CardKeyword.Draw),"Slime must draw one");
+            foreach(int id in new[]{6,12,22})Require(database.GetCardById(id).keywords==CardKeyword.None,"Removed heal remains on card "+id);
+            Require(database.GetCardById(24).keywords==CardKeyword.Draw&&
+                database.GetCardById(25).keywords==(CardKeyword.Heal|CardKeyword.Draw)&&
+                database.GetCardById(26).keywords==CardKeyword.Remove&&
+                database.GetCardById(27).keywords==CardKeyword.Buff,"Spell keyword assets mismatch");
+            Debug.Log("BALANCE_CARD_KEYWORDS_VERIFIED: draw slime, removed unit heals, four spell effects");
         }
     }
 }

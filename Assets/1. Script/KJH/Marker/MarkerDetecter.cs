@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using Meta.XR;
 using OpenCvSharp;
 using OpenCvSharp.Aruco;
@@ -16,7 +16,7 @@ public class MarkerDetecter : MonoBehaviour
     private float detectionIntervalTime = 3f;
     // 쓰레드용 작동 변수
     private Thread cvThread;
-    private bool isRunning;
+    private volatile bool isRunning;
 
     // 쓰레드 넘겨줄 변수
     private Color32[] latestPixels;
@@ -66,7 +66,21 @@ public class MarkerDetecter : MonoBehaviour
     private DetectorParameters detectorParameters;
     private List<MarkerDetectionResult> markerDetectionResult = new List<MarkerDetectionResult>(); 
 
-    void Start()
+    [SerializeField] private PredefinedDictionaryName markerDictionary = PredefinedDictionaryName.Dict4X4_50;
+    [SerializeField] private bool waitForCameraReady;
+    public bool CameraReady { get; private set; }
+    public string CameraStatus { get; private set; } = "카메라 준비 중";
+    System.Collections.IEnumerator Start()
+    {
+        CameraStatus = "카메라 준비 중 · 기기에서 카메라 권한을 허용하세요.";
+        while (waitForCameraReady && passthroughCameraAccess != null && (!passthroughCameraAccess.IsPlaying || passthroughCameraAccess.CurrentResolution.x <= 0 || passthroughCameraAccess.CurrentResolution.y <= 0))
+            yield return null;
+        if (passthroughCameraAccess == null)
+        { CameraStatus = "패스스루 카메라 참조가 없습니다."; yield break; }
+        try { InitializeCamera(); }
+        catch (System.Exception error) { CameraStatus = "카메라 초기화 실패. 앱을 다시 실행하고 권한을 확인하세요."; Debug.LogException(error); }
+    }
+    void InitializeCamera()
     {
         // 탐지 쿨다운 조절
         normalModeDetectionInterval = 1f / detectionIntervalTime;
@@ -76,7 +90,7 @@ public class MarkerDetecter : MonoBehaviour
 
         // 마커 찾기용 변수 값 넣기
         detectorParameters = new DetectorParameters();
-        dictionary = CvAruco.GetPredefinedDictionary(PredefinedDictionaryName.Dict4X4_50);
+        dictionary = CvAruco.GetPredefinedDictionary(markerDictionary);
 
         // 마커 절반크기 계산
         markerHalfSize = markerSize * 0.001f/2f;
@@ -120,8 +134,14 @@ public class MarkerDetecter : MonoBehaviour
 
         // 스레드 시작
         isRunning = true;
-        cvThread = new Thread(CVLoop);
+        cvThread = new Thread(() =>
+        {
+            try { CVLoop(); }
+            catch (System.Exception error) { CameraReady = false; CameraStatus = "마커 처리 오류. 앱을 다시 실행하세요."; Debug.LogException(error); }
+        });
+        cvThread.IsBackground = true;
         cvThread.Start();
+        CameraReady = true; CameraStatus = "카메라 준비 완료";
     }
 
     void Update()
@@ -132,7 +152,7 @@ public class MarkerDetecter : MonoBehaviour
         timer += Time.deltaTime;
 
         // 패스쓰루 카메라 작동 여부 확인
-        if (passthroughCameraAccess == null) return;
+        if (!CameraReady || passthroughCameraAccess == null) return;
         if (!passthroughCameraAccess.IsPlaying) return;
 
         // 프레임 사용 여부 체크

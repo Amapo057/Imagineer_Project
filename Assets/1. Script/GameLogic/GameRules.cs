@@ -10,8 +10,9 @@ public static class GameRules
     // 플레이어 한 명당 덱에 들어가는 카드 수
     public const int DeckSize = 20;
 
-    // 명치를 이 횟수만큼 맞으면 패배
-    public const int FaceHitThreshold = 10;
+    public const int StartingHeroHealth = 20;
+    // Kept for existing scene/debug scripts. This is now a damage threshold.
+    public const int FaceHitThreshold = StartingHeroHealth;
 
     // 코스트는 자기 턴 하나 지날 때마다 1씩 늘어나고, 최대치까지만 차오름
     public const int MaxCost = 8;
@@ -22,13 +23,11 @@ public static class GameRules
 
     // 손패 최대 장수. 이미 가득 찬 상태에서 드로우 효과(카드/키워드 무관)가 발동하면 그냥 아무 일도
     // 안 일어남 — 카드가 사라지지 않고 덱에 그대로 남음(GameManager.TryDrawCard 참고)
-    public const int MaxHandSize = 9;
+    public const int MaxHandSize = 12;
 
-    // 마법 카드 "제거"가 지정한 적 하수인에게 주는 고정 피해량
+    // 심판의낙뢰: 아군과 적군의 모든 하수인에게 주는 피해량.
     public const int RemoveSpellDamage = 4;
 
-    // 마법 카드 "강화"가 아군 하수인 전체에게 주는 임시 공격력 증가량.
-    // "이번 턴이 끝날 때까지"만 유지되고, 그 턴의 전투 페이즈가 끝나면 자동으로 원상복구됨
-    // (GameManager.HandleCombat 참고)
-    public const int BuffSpellAttackBonus = 2;
+    // 전쟁의함성: 시전할 때 필드에 있는 아군 하수인의 공격력을 영구적으로 증가시킴.
+    public const int BuffSpellAttackBonus = 3;
 }
