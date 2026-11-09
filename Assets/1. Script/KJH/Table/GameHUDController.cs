@@ -336,6 +336,7 @@ public class GameHUDController : MonoBehaviour
         {
             game.ApplyFrontDamage(PlayerSide.Opponent, laneIndex, amount);
         }
+        ProductionGameController.Current?.ArmWeapon(PlayerSide.Opponent, data);
     }
 
     // 상대 필드(라인 4개)에 지금 뭐가 있는지 한 줄 텍스트로 보여줌. 상대 쪽은 아직 물리 슬롯이

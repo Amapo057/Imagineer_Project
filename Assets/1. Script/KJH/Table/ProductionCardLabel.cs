@@ -17,7 +17,7 @@ public sealed class ProductionCardLabel : MonoBehaviour
         view.label = root.AddComponent<TextMeshPro>();
         view.label.font = Object.FindFirstObjectByType<ProductionGameUI>()?.font;
         view.label.outlineColor = Color.black; view.label.outlineWidth = 0.15f;
-        view.label.fontSize = 3; view.label.alignment = TextAlignmentOptions.Center;
+        view.label.fontSize = 0.18f; view.label.alignment = TextAlignmentOptions.Center;
         view.label.rectTransform.sizeDelta = new Vector2(0.24f, 0.12f);
         return root;
     }

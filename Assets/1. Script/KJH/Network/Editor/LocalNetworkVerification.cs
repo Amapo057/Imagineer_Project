@@ -19,6 +19,8 @@ public static class LocalNetworkVerification
         public GameManager game;
         public SecondPlayerCoin coin;
         public int starts;
+        public readonly ProductionWeaponState weapons = new ProductionWeaponState();
+        public int weaponMessages, weaponHits;
         public readonly List<string> events=new List<string>();
         public readonly List<int> probes=new List<int>();
         public readonly HashSet<int> spells=new HashSet<int>();
@@ -28,6 +30,7 @@ public static class LocalNetworkVerification
             Reset();
             net.OnGameStartReceived+=side=>{spells.Clear();game=new GameManager(false, new MatchRuleSet { fatigueOnEmptyDraw = false });game.StartGame(side);coin=new SecondPlayerCoin(game);starts++;events.Add("start");};
             net.OnEndTurnReceived+=()=>game.EndTurn();
+            net.OnWeaponStrikeReceived+=(source,lane,turn)=>{weaponMessages++;if(weapons.Strike(game,PlayerSide.Opponent,source,lane,turn))weaponHits++;};
             net.OnCoinUsedReceived+=()=>coin.TryUse(PlayerSide.Opponent);
             net.OnSpellCastReceived+=(id,lane)=>
             {
@@ -85,16 +88,37 @@ public static class LocalNetworkVerification
             Equal(host,client);Debug.Log("LOCAL_TCP_GAMEPLAY_PASS: cards, mana, coin, turn, combat, face hits");
 
             first.game.Board.me.currentCost=8;second.game.Board.opponent.currentCost=8;
+            Place(first,cards.GetCardById(15),PlayerSide.Me,2);first.net.SendCardPlayed(15,2);
+            Place(first,cards.GetCardById(19),PlayerSide.Me,3);first.net.SendCardPlayed(19,3);
+            Wait(host,client,()=>second.weapons.Pending(second.game,PlayerSide.Opponent)==2,"weapon charges",5);
+            int weaponTurn=first.game.TurnNumber;
+            Check(first.net.SendWeaponStrike(15,1,weaponTurn),"Weapon packet send failed");
+            Check(first.weapons.Strike(first.game,PlayerSide.Me,15,1,weaponTurn),"Local weapon failed");
+            Wait(host,client,()=>second.weaponHits==1,"weapon damage synchronization",5);
+            Check(first.game.Board.opponent.lanes[1].currentHealth==2,"Weapon cap was not 2");Equal(host,client);
+            first.net.SendWeaponStrike(15,1,weaponTurn);
+            first.net.SendWeaponStrike(19,1,weaponTurn-1);
+            Wait(host,client,()=>second.weaponMessages==3,"duplicate/stale weapon packets",5);
+            Check(second.weaponHits==1&&second.weapons.Pending(second.game,PlayerSide.Opponent)==1,"Replay consumed another weapon");
+            Check(first.net.SendWeaponStrike(19,1,weaponTurn),"Second weapon packet failed");
+            Check(first.weapons.Strike(first.game,PlayerSide.Me,19,1,weaponTurn),"Second weapon failed");
+            Wait(host,client,()=>second.weaponHits==2,"weapon lethal synchronization",5);
+            Check(first.game.Board.opponent.lanes[1]==null,"Weapon did not remove dead target");Equal(host,client);
+            Debug.Log("LOCAL_TCP_WEAPON_PASS: two charges, max2 damage, duplicate/stale rejection, lethal board symmetry");
+
+            first.game.Board.me.currentCost=8;second.game.Board.opponent.currentCost=8;
             int hpFirst=first.game.Board.me.HeroHealth,hpSecond=first.game.Board.opponent.HeroHealth;
             Check(first.game.TryCastSpell(cards.GetCardById(26),PlayerSide.Me,consumeHand:false),"Local global spell rejected");
             first.spells.Add(26);first.net.SendSpellCast(26,-1);
             Wait(host,client,()=>second.spells.Contains(26),"global spell synchronization",5);
             Equal(host,client);
             Check(first.game.Board.me.HeroHealth==hpFirst&&first.game.Board.opponent.HeroHealth==hpSecond,"Global spell damaged hero");
+            first.game.Board.me.heroDamage=10;second.game.Board.opponent.heroDamage=10;
             Check(first.game.TryCastSpell(cards.GetCardById(25),PlayerSide.Me,consumeHand:false),"Heal spell rejected");
             first.spells.Add(25);first.net.SendSpellCast(25,-1);
             Wait(host,client,()=>second.spells.Contains(25),"heal spell synchronization",5);
             Equal(host,client);
+            Check(first.game.Board.me.HeroHealth==19,"Heal spell must restore exactly four health on both peers");
             first.net.SendSpellCast(26,-1); // A repeated physical-card message must not cast twice.
             Debug.Log("LOCAL_TCP_MODERN_SPELLS_PASS: symmetric board damage, hero healing, costs and spell messages");
 
@@ -134,6 +158,7 @@ public static class LocalNetworkVerification
         var board=peer.game.Board.GetBoard(side);
         Check(peer.game.State.CurrentPlayer==side&&board.currentCost>=data.cost&&board.lanes[lane]==null,"Invalid network placement");
         board.lanes[lane]=new CardInstance(data,side);board.currentCost-=data.cost;
+        peer.weapons.Arm(peer.game,side,data);
     }
 
     static void Wait(Peer a,Peer b,Func<bool> done,string operation,int seconds)

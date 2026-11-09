@@ -14,7 +14,7 @@ using UnityEngine;
 public class GameNetworkManager : MonoBehaviour
 {
     public enum ConnectionMode { Automatic, Host, Client }
-    public const string ProtocolTag = "IMAGINEER_LAN_3";
+    public const string ProtocolTag = "IMAGINEER_LAN_4";
     const int GamePort = 7777, DiscoveryPort = 7778, ConnectTimeoutMs = 5000;
     private static GameNetworkManager instance;
     public static GameNetworkManager Instance
@@ -59,6 +59,7 @@ public class GameNetworkManager : MonoBehaviour
     public event Action<PlayerSide> OnGameStartReceived;
     public event Action OnEndTurnReceived, OnCoinUsedReceived, OnDrawConfirmedReceived, OnRematchReceived, OnDisconnected;
     public event Action<int, int> OnCardPlayedReceived, OnSpellCastReceived;
+    public event Action<int, int, int> OnWeaponStrikeReceived;
 
     void Awake()
     {
@@ -72,7 +73,8 @@ public class GameNetworkManager : MonoBehaviour
     {
         var text = new StringBuilder(domain).Append('|').Append(Application.buildGUID).Append('|').Append(JsonUtility.ToJson(new MatchRuleSet()))
             .Append('|').Append(GameRules.LaneCount).Append('|').Append(GameRules.DeckSize)
-            .Append('|').Append(GameRules.MaxCost).Append('|').Append(GameRules.SecondPlayerStartingCost);
+            .Append('|').Append(GameRules.MaxCost).Append('|').Append(GameRules.SecondPlayerStartingCost)
+            .Append('|').Append(ProductionWeaponState.DamageCap);
         if (database != null)
             foreach (var c in database.allCards.Where(c => c != null).OrderBy(c => c.cardId))
                 text.Append('|').Append(c.cardId).Append(':').Append(c.cost).Append(':').Append(c.attack)
@@ -370,6 +372,12 @@ public class GameNetworkManager : MonoBehaviour
                 if (parts.Length == 2 && (parts[1] == "ME" || parts[1] == "PEER"))
                     Queue(id, () => OnGameStartReceived?.Invoke(parts[1] == "ME" ? PlayerSide.Me : PlayerSide.Opponent));
                 break;
+            case NetMsg.WeaponStrike:
+                if (parts.Length == 4 && int.TryParse(parts[1], out int source) && source > 0 &&
+                    int.TryParse(parts[2], out int weaponLane) && weaponLane >= 0 && weaponLane < GameRules.LaneCount &&
+                    int.TryParse(parts[3], out int weaponTurn) && weaponTurn > 0)
+                    Queue(id, () => OnWeaponStrikeReceived?.Invoke(source, weaponLane, weaponTurn));
+                break;
             case NetMsg.EndTurn: Queue(id, () => OnEndTurnReceived?.Invoke()); break;
             case NetMsg.CoinUsed: Queue(id, () => OnCoinUsedReceived?.Invoke()); break;
             case NetMsg.DrawConfirmed: Queue(id, () => OnDrawConfirmedReceived?.Invoke()); break;
@@ -401,6 +409,7 @@ public class GameNetworkManager : MonoBehaviour
 
     public bool TrySendEndTurn(PlayerSide localSide, PlayerSide currentTurn) => localSide == currentTurn && SendRaw(NetMsg.EndTurn);
     public void SendCardPlayed(int cardId, int lane) => SendRaw($"{NetMsg.CardPlayed}|{cardId}|{lane}");
+    public bool SendWeaponStrike(int source, int lane, int turn) => SendRaw($"{NetMsg.WeaponStrike}|{source}|{lane}|{turn}");
     public void SendCoinUsed() => SendRaw(NetMsg.CoinUsed);
     public void SendSpellCast(int cardId, int lane) => SendRaw($"{NetMsg.SpellCast}|{cardId}|{lane}");
     public void SendDrawConfirmed() => SendRaw(NetMsg.DrawConfirmed);

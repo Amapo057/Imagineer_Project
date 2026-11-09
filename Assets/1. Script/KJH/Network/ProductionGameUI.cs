@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using UnityEngine;
@@ -10,6 +10,7 @@ using UnityEngine.XR;
 public sealed class ProductionGameUI : MonoBehaviour
 {
     public TMP_FontAsset font;
+    public Material tableMaterial;
     public Camera viewCamera;
     public float dwellSeconds = 1.5f;
     public bool Built { get; private set; }
@@ -19,7 +20,8 @@ public sealed class ProductionGameUI : MonoBehaviour
     ProductionGameController session;
     RectTransform panel;
     GameObject connectionPanel, gameplayPanel;
-    TextMeshProUGUI statusText, actionText, fieldsText, gazeText, ipText;
+    TextMeshProUGUI statusText, actionText, fieldsText, gazeText, ipText, myScore, enemyScore;
+    GameObject buildInfo, instructions, scoreRow;
     UnityEngine.UI.GraphicRaycaster raycaster;
     UnityEngine.UI.Button looked, lastActivated;
     float held, refreshAt;
@@ -52,9 +54,14 @@ public sealed class ProductionGameUI : MonoBehaviour
         layout.childControlWidth = true; layout.childControlHeight = false; layout.childForceExpandWidth = true; layout.childForceExpandHeight = false;
         raycaster = canvasObject.GetComponent<UnityEngine.UI.GraphicRaycaster>();
         Label(panel, "Title", "이매지니어", 34, 46);
-        Label(panel, "Build", "빌드 " + session.BuildLabel + " / 데이터 " + session.Network.MatchSignature, 19, 30);
-        Label(panel, "Instructions", "머리를 움직여 흰 점을 버튼에 맞추고 1.5초 기다리세요.\n선택 뒤 다른 곳을 보세요. 컨트롤러 트리거로 즉시 선택도 가능합니다.", 21, 58);
+        buildInfo = Label(panel, "Build", "빌드 " + session.BuildLabel + " / 데이터 " + session.Network.MatchSignature, 19, 30).gameObject;
+        instructions = Label(panel, "Instructions", "머리를 움직여 흰 점을 버튼에 맞추고 1.5초 기다리세요.\n선택 뒤 다른 곳을 보세요. 컨트롤러 트리거로 즉시 선택도 가능합니다.", 21, 58).gameObject;
         statusText = Label(panel, "Status", "", 21, 200);
+        var scores = Row(panel, "Scores", 90); scoreRow = scores.gameObject;
+        myScore = Label(scores, "MyScore", "", 29, 90);
+        enemyScore = Label(scores, "EnemyScore", "", 29, 90);
+        myScore.color = new Color(0.35f, 0.91f, 0.89f);
+        enemyScore.color = new Color(1f, 0.72f, 0.46f);
         var tabs = Row(panel, "Tabs", 58);
         Button(tabs, "ConnectionTab", "연결 설정", () => ShowConnection(true));
         Button(tabs, "GameplayTab", "게임 메뉴", () => ShowConnection(false));
@@ -88,16 +95,18 @@ public sealed class ProductionGameUI : MonoBehaviour
         });
         Label(connectionPanel.transform, "ManualHint", "수동 연결: 한 기기는 ‘호스트’, 다른 기기는 그 기기의 Wi-Fi IP 입력.\n호스트와 선공은 별개입니다. 같은 APK를 실행하고 서로의 턴·체력·필드를 확인하세요.", 20, 60);
 
-        gameplayPanel = Vertical(panel, "Gameplay", 434).gameObject;
+        gameplayPanel = Vertical(panel, "Gameplay", 350).gameObject;
         fieldsText = Label(gameplayPanel.transform, "Fields", "", 21, 105);
-        var actions = Grid(gameplayPanel.transform, "Game Actions", 202, 3, 62);
+        var actions = Grid(gameplayPanel.transform, "Game Actions", 140, 2, 66);
         gameButtons.Add(Button(actions, "EndTurn", "턴 종료", session.EndTurn));
-        Button(actions, "Coin", "후공 동전 사용", session.UseCoin);
+        Button(actions, "Coin", "동전  +1 코스트", session.UseCoin);
         Button(actions, "DrawConfirm", "뽑기 1장 확인", session.ConfirmDraw);
-        Button(actions, "Rematch", "새 판 / 재대결", session.Rematch);
-        Label(gameplayPanel.transform, "Scope", "하수인과 마법은 실물 카드를 필드 슬롯에 놓아 사용합니다.\n코스트 부족·상대 턴·미연결 상태에서는 카드가 등록되지 않습니다.\n새 판에서는 필드의 실물 카드를 모두 치운 뒤 다시 놓으세요.", 21, 110);
+        Button(actions, "Rematch", "재대결 준비", session.Rematch);
+        Label(gameplayPanel.transform, "Scope", "하수인과 마법은 실물 카드를 필드 슬롯에 놓아 사용합니다.\n코스트 부족·상대 턴·미연결 상태에서는 카드가 등록되지 않습니다.\n새 판에서는 필드의 실물 카드를 모두 치운 뒤 다시 놓으세요.", 21, 85);
         actionText = Label(panel, "Action", "", 22, 65);
         gazeText = Label(panel, "Gaze", "버튼을 바라보세요.", 20, 30);
+        var feedback = GetComponent<ProductionTableFeedback>() ?? gameObject.AddComponent<ProductionTableFeedback>();
+        feedback.Build(session, this);
         AddReticle(); Built = true; ShowConnection(true); PlacePanel(); Refresh();
         if (Application.platform == RuntimePlatform.Android)
         {
@@ -134,7 +143,21 @@ public sealed class ProductionGameUI : MonoBehaviour
         else panel.localScale = Vector3.one * 0.0013f;
         panel.rotation = Quaternion.LookRotation(forward, Vector3.up);
     }
-    void ShowConnection(bool value) { connectionPanel.SetActive(value); gameplayPanel.SetActive(!value); PlacePanel(); }
+    void ShowConnection(bool value)
+    {
+        connectionPanel.SetActive(value); gameplayPanel.SetActive(!value);
+        buildInfo.SetActive(value); instructions.SetActive(value); scoreRow.SetActive(!value);
+        statusText.fontSize = value ? 21 : 32;
+        var size = statusText.GetComponent<UnityEngine.UI.LayoutElement>();
+        size.minHeight = size.preferredHeight = value ? 200 : 72;
+        statusText.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, value ? 200 : 72);
+        panel.sizeDelta = new Vector2(1100, value ? 1180 : 900);
+        PlacePanel(); RefreshDisplay();
+    }
+    public void ShowFeedback(string text) { feedbackText = text; feedbackUntil = Time.unscaledTime + 2.5f; }
+    string feedbackText = "";
+    float feedbackUntil;
+    void RefreshDisplay() { if (Built) Refresh(); }
     void LateUpdate()
     {
         if (!Built) return;
@@ -192,11 +215,22 @@ public sealed class ProductionGameUI : MonoBehaviour
         string role = net.Connected ? (net.IsHost ? "호스트" : "클라이언트") : "미연결";
         string turn = session.Ready ? (game.IsGameOver ? (mine.IsDefeated ? "패배" : "승리") : (game.State.CurrentPlayer == PlayerSide.Me ? "내 턴" : "상대 턴")) : "연결 대기";
         string order = session.Ready ? (mine.isSecondPlayer ? "후공" : "선공") : "미정";
-        statusText.text = $"{net.StatusText}\n내 IP: {net.LocalAddresses}\n상대 IP: {net.PeerAddress} / {role} / 나는 {order} / {turn}\n"
-            + $"나: 체력 {mine.HeroHealth} · 코스트 {mine.currentCost}/{VRGameSession.Coin.DisplayCapacity(PlayerSide.Me)}   상대: 체력 {other.HeroHealth} · 코스트 {other.currentCost}/{VRGameSession.Coin.DisplayCapacity(PlayerSide.Opponent)}\n"
-            + $"뽑기 확인 대기: 나 {VRGameSession.PendingPhysicalDraws(PlayerSide.Me)} · 상대 {VRGameSession.PendingPhysicalDraws(PlayerSide.Opponent)}\n새 게임 횟수 {session.Starts}";
-        fieldsText.text = Field("내 필드", mine) + "\n" + Field("상대 필드", other);
-        actionText.text = session.detector != null && !session.detector.CameraReady ? session.detector.CameraStatus : (session.anchor != null && !session.anchor.IsReady ? "중앙 마커 0번을 3.5초 이상 비춰 테이블을 맞추세요." : (session.seating != null && !session.seating.IsReady ? "테이블 한쪽에 서세요. 내 자리를 자동으로 맞추는 중입니다." : session.LastAction));
+        statusText.text = connectionPanel.activeSelf
+            ? $"{net.StatusText}\n내 IP: {net.LocalAddresses}\n상대 IP: {net.PeerAddress}\n{order} · {turn}"
+            : game.IsGameOver ? (mine.IsDefeated ? "패배 · 다음 판에 다시 도전하세요" : other.IsDefeated ? "승리 · 전장을 지켜냈습니다" : "무승부")
+            : $"{turn}  ·  {game.TurnNumber}번째 턴  ·  {order}";
+        statusText.color = game.IsGameOver ? new Color(1f, 0.80f, 0.40f) : game.State.CurrentPlayer == PlayerSide.Me ? new Color(0.35f, 0.91f, 0.89f) : Ink;
+        myScore.text = $"나  <b>{mine.HeroHealth}</b> HP\n코스트 {mine.currentCost} / {VRGameSession.Coin.DisplayCapacity(PlayerSide.Me)}";
+        enemyScore.text = $"상대  <b>{other.HeroHealth}</b> HP\n코스트 {other.currentCost} / {VRGameSession.Coin.DisplayCapacity(PlayerSide.Opponent)}";
+        int pending = VRGameSession.PendingPhysicalDraws(PlayerSide.Me);
+        fieldsText.text = game.IsGameOver ? "필드의 실물 카드를 치운 뒤 재대결을 선택하세요."
+            : pending > 0 ? $"<b>{pending}장</b>을 뽑아 주세요. 뽑은 카드마다 아래 확인 버튼을 누르세요."
+            : session.CanAct && session.PendingWeapons > 0 ? $"무기 {session.PendingWeapons}회 사용 가능 · 최대 2 피해\n주먹 쥔 손을 상대 기물 칸 밖에서 안으로 넣어 타격하세요."
+            : session.CanAct ? "내 턴입니다. 빛나는 빈 칸에 실물 카드를 놓으세요.\n준비가 끝나면 턴 종료를 선택하세요." : "상대가 행동하고 있습니다. 테이블에서 전투를 확인하세요.";
+        Buttons["DrawConfirm"].GetComponentInChildren<TextMeshProUGUI>().text = pending > 0 ? $"뽑기 확인  ·  남은 {pending}장" : "뽑기 완료";
+        Buttons["EndTurn"].GetComponentInChildren<TextMeshProUGUI>().text = session.PendingWeapons > 0 ? "턴 종료 · 남은 무기 포기" : "턴 종료";
+        actionText.text = session.ReadinessHint.Length > 0 ? session.ReadinessHint :
+            Time.unscaledTime < feedbackUntil ? feedbackText : session.LastAction;
         foreach (var button in gameButtons) button.interactable = session.CanAct;
         Buttons["Coin"].interactable = session.CanAct && VRGameSession.Coin.CanUse(PlayerSide.Me);
         Buttons["DrawConfirm"].interactable = session.HardwareReady && session.Ready && net.Connected && !game.IsGameOver && VRGameSession.PendingPhysicalDraws(PlayerSide.Me) > 0;

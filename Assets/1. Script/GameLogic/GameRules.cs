@@ -10,7 +10,7 @@ public static class GameRules
     // 플레이어 한 명당 덱에 들어가는 카드 수
     public const int DeckSize = 20;
 
-    public const int StartingHeroHealth = 20;
+    public const int StartingHeroHealth = 25;
     // Kept for existing scene/debug scripts. This is now a damage threshold.
     public const int FaceHitThreshold = StartingHeroHealth;
 

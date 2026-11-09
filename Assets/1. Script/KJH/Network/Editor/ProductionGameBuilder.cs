@@ -32,6 +32,14 @@ public static class ProductionGameBuilder
         ui.viewCamera = Camera.main;
         if (ui.viewCamera == null) throw new Exception("실제 HMD MainCamera가 없습니다.");
         ui.font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Fonts/NotoSansKR SDF.asset");
+        const string materialPath = "Assets/1. Script/KJH/Network/Production/TableFeedback.mat";
+        Directory.CreateDirectory(Path.GetDirectoryName(materialPath));
+        ui.tableMaterial = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
+        if (ui.tableMaterial == null)
+        {
+            ui.tableMaterial = new Material(Shader.Find("Sprites/Default"));
+            AssetDatabase.CreateAsset(ui.tableMaterial, materialPath);
+        }
         foreach (var old in oldSlots)
         {
             var serialized = new SerializedObject(old);
@@ -57,6 +65,7 @@ public static class ProductionGameBuilder
             UnityEngine.Object.DestroyImmediate(old);
         }
         var seat = root.AddComponent<ProductionSeating>(); flow.seating = seat;
+        root.AddComponent<ProductionWeaponInput>();
         seat.anchor = flow.anchor; seat.head = ui.viewCamera;
         seat.marker = UnityEngine.Object.FindFirstObjectByType<MarkerWorldPos>();
         seat.field = ((GameObject)new SerializedObject(seat.marker).FindProperty("fieldRoot").objectReferenceValue).transform;

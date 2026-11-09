@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: 09_I
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   cardId: 9
-  cardName: "\uACF5\uC6A9-\uD3ED\uD48D\uADF8\uB9AC\uD540"
+  cardName: "\uacf5\uc6a9-\uac00\ub80c"
   cardType: 0
   cardClass: {fileID: 0}
   description: "\uc804\ud22c\uc758\ud568\uc131: \uc815\uba74 \ub77c\uc778\uc758 \uc801\uc5d0\uac8c \uacf5\uaca9\ub825(2)\ub9cc\ud07c \ud53c\ud574\ub97c \uc90d\ub2c8\ub2e4"
@@ -21,4 +21,4 @@ MonoBehaviour:
   attack: 2
   health: 1
   keywords: 128
-  hologramPrefab: {fileID: 0}
+  hologramPrefab: {fileID: 3441108725992354116, guid: f29559835f6fde94ba8af59259638bfc, type: 3}

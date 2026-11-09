@@ -36,7 +36,7 @@ namespace KJH.Balancing
             Check(g.Board.me.hand.Count==7&&g.Board.opponent.hand.Count==6&&drawn==13,"Opening 6 + automatic 1 draw incorrect");
             g.EndTurn();
             Check(g.Board.opponent.hand.Count==7&&drawn==14,"Turn draw incorrect");
-            Check(g.Board.me.HeroHealth==20&&g.Board.opponent.HeroHealth==20,"Initial HP must be 20");
+            Check(g.Board.me.HeroHealth==25&&g.Board.opponent.HeroHealth==25,"Initial HP must be 25");
             g.DrawCards(PlayerSide.Me,20);
             Check(g.Board.me.hand.Count==12&&g.Board.me.deck.Count==8,"Hand cap must be 12 without discarding deck cards");
 
@@ -44,7 +44,7 @@ namespace KJH.Balancing
             {
                 var game=Isolated();game.EndTurn();var unit=Card(attack,3);
                 game.Board.opponent.lanes[0]=new CardInstance(unit,PlayerSide.Opponent);game.EndTurn();
-                Check(game.Board.me.HeroHealth==20-attack,"Hero must take attack damage");
+                Check(game.Board.me.HeroHealth==25-attack,"Hero must take attack damage");
                 UnityEngine.Object.DestroyImmediate(unit);
             }
 
@@ -57,21 +57,26 @@ namespace KJH.Balancing
             Check(spellGame.Board.me.hand.Count==3&&sequence=="CDDD","Spell draws three after consuming card");
             var heal=Card();heal.cardType=CardType.Spell;heal.keywords=CardKeyword.Heal|CardKeyword.Draw;
             spellGame.Board.me.heroDamage=10;spellGame.Board.me.hand.Add(heal);
-            Check(spellGame.TryCastSpell(heal,PlayerSide.Me)&&spellGame.Board.me.HeroHealth==15&&spellGame.Board.me.hand.Count==4,"Heal five + draw one incorrect");
+            Check(spellGame.TryCastSpell(heal,PlayerSide.Me)&&spellGame.Board.me.HeroHealth==19&&spellGame.Board.me.hand.Count==4,"Heal four + draw one incorrect");
             spellGame.ReduceFaceHitCount(PlayerSide.Me,99);
-            Check(spellGame.Board.me.HeroHealth==20,"Heal must cap at starting health");
+            Check(spellGame.Board.me.HeroHealth==25,"Heal must cap at starting health");
 
             var clear=Card();clear.cardType=CardType.Spell;clear.keywords=CardKeyword.Remove;
             var field=Isolated();field.Board.me.currentCost=8;field.Board.me.hand.Add(clear);
             var big=Card(2,8);
             foreach(var side in new[]{PlayerSide.Me,PlayerSide.Opponent})
             {
-                var b=field.Board.GetBoard(side);b.lanes[0]=new CardInstance(body,side);b.lanes[1]=new CardInstance(big,side);
+                var b=field.Board.GetBoard(side);
+                for(int lane=0;lane<GameRules.LaneCount;lane++)b.lanes[lane]=new CardInstance(lane%2==0?body:big,side);
                 b.heroDamage=4;
             }
             Check(field.TryCastSpell(clear,PlayerSide.Me),"Global spell should need no selected target");
             foreach(var b in new[]{field.Board.me,field.Board.opponent})
-                Check(b.lanes[0]==null&&b.lanes[1].currentHealth==4&&b.HeroHealth==16,"Global spell must damage both fields by 4, never heroes");
+            {
+                for(int lane=0;lane<GameRules.LaneCount;lane++)
+                    Check(lane%2==0?b.lanes[lane]==null:b.lanes[lane]?.currentHealth==4,"Global spell must damage every lane on both fields by 4");
+                Check(b.HeroHealth==21,"Global spell must never damage heroes");
+            }
 
             var buffGame=Isolated();var buff=Card();buff.cardType=CardType.Spell;buff.keywords=CardKeyword.Buff;
             buffGame.Board.me.currentCost=8;buffGame.Board.me.hand.Add(buff);
@@ -84,19 +89,19 @@ namespace KJH.Balancing
 
             var fatigue=new GameManager(false,new MatchRuleSet{openingHand=0,cardsPerTurn=0});fatigue.StartGame(PlayerSide.Me);
             fatigue.DrawCards(PlayerSide.Me,2);
-            Check(fatigue.Board.me.HeroHealth==17&&fatigue.Board.me.fatigueDamage==2,"Empty deck draw should deal fatigue 1 then 2");
+            Check(fatigue.Board.me.HeroHealth==22&&fatigue.Board.me.fatigueDamage==2,"Empty deck draw should deal fatigue 1 then 2");
             fatigue.DrawCards(PlayerSide.Me,2);
-            Check(fatigue.Board.me.HeroHealth==10&&fatigue.Board.me.fatigueDamage==4,"Fatigue must escalate per attempted card");
+            Check(fatigue.Board.me.HeroHealth==15&&fatigue.Board.me.fatigueDamage==4,"Fatigue must escalate per attempted card");
 
             VRGameSession.ResetGame();
-            Check(VRGameSession.Game.Board.me.HeroHealth==20&&VRGameSession.PendingPhysicalDraws(PlayerSide.Me)==7,"Physical deck opening allocation incorrect");
+            Check(VRGameSession.Game.Board.me.HeroHealth==25&&VRGameSession.PendingPhysicalDraws(PlayerSide.Me)==7,"Physical deck opening allocation incorrect");
             VRGameSession.Game.DrawCards(PlayerSide.Me,14);
-            Check(VRGameSession.Game.Board.me.HeroHealth==20,"Unconfirmed physical draws must not cause fatigue");
+            Check(VRGameSession.Game.Board.me.HeroHealth==25,"Unconfirmed physical draws must not cause fatigue");
             for(int i=0;i<20;i++)VRGameSession.ConfirmPhysicalDraw(PlayerSide.Me);
-            Check(VRGameSession.Game.Board.me.HeroHealth==19,"Physical draw requests beyond 20 must produce fatigue");
+            Check(VRGameSession.Game.Board.me.HeroHealth==24,"Physical draw requests beyond 20 must produce fatigue");
             VRGameSession.ResetGame();
             VerifyPhysicalSpellInput();
-            Debug.Log("MODERN_RULE_VERIFICATION_SUCCESS: HP20, opening6, draw1, hand12, drawSpell3, clearBoth4, permanentBuff, fatigue, physical quota");
+            Debug.Log("MODERN_RULE_VERIFICATION_SUCCESS: HP25, opening6, draw1, hand12, drawSpell3, heal4, clearAllEight4, permanentBuff, fatigue, physical quota");
             foreach(var c in new[]{body,draw,heal,clear,big,buff})UnityEngine.Object.DestroyImmediate(c);
         }
 
@@ -120,7 +125,7 @@ namespace KJH.Balancing
             var instanceField=typeof(GameNetworkManager).GetField("instance",BindingFlags.Static|BindingFlags.NonPublic);
             var previous=instanceField.GetValue(null);instanceField.SetValue(null,network);
             confirm.Invoke(slot,new object[]{25});
-            Check(game.Board.me.HeroHealth==15&&game.Board.me.currentCost==7,"Marker-confirmed heal spell failed");
+            Check(game.Board.me.HeroHealth==19&&game.Board.me.currentCost==7,"Marker-confirmed heal spell failed");
             Check((int)typeof(SlotModelSpawner).GetField("confirmedCardId",flags).GetValue(slot)==1&&visual!=null,"Spell replaced friendly model");
             confirm.Invoke(slot,new object[]{25});
             Check(game.Board.me.currentCost==7,"Repeated spell detection consumed twice");

@@ -24,6 +24,8 @@ namespace KJH.Balancing
             public MatchRuleSet rules;
             public int opponentPolicyOffset, mirrorFaction;
             public bool limitedVR;
+            public bool disableWeaponBattlecry;
+            public int weaponDamageCap, frontDamageCap;
             public Stat[] cards = Array.Empty<Stat>();
         }
         [Serializable] public class Batch { public Trial[] trials; }
@@ -115,8 +117,14 @@ namespace KJH.Balancing
             Debug.Log("BALANCE_RULE_CHECKS_PASSED");
         }
 
+        static bool simulateWeaponBattlecry;
+        static int weaponDamageCap, frontDamageCap;
+        static int EffectDamage(int attack, int cap) => cap > 0 ? Math.Min(attack, cap) : attack;
         static Result Run(Trial trial, CardData[] cards)
         {
+            simulateWeaponBattlecry = !trial.disableWeaponBattlecry;
+            weaponDamageCap = trial.weaponDamageCap;
+            frontDamageCap = trial.frontDamageCap;
             var result=new Result{name=trial.name};
             for(int policy=0;policy<3;policy++)
             for(int pair=0;pair<trial.pairs;pair++)
@@ -240,7 +248,7 @@ namespace KJH.Balancing
                 {
                     for(int lane=0;lane<4;lane++)if(board.lanes[lane]==null)
                     {
-                        if(!limited && card.HasKeyword(CardKeyword.Weapon) && enemy.lanes.Any(c=>c!=null))
+                        if(!limited && simulateWeaponBattlecry && card.HasKeyword(CardKeyword.Weapon) && enemy.lanes.Any(c=>c!=null))
                         {
                             for(int target=0;target<4;target++)if(enemy.lanes[target]!=null)moves.Add(new Move{hand=i,lane=lane,target=target});
                         }
@@ -282,9 +290,9 @@ namespace KJH.Balancing
                 board.TryPlaceOnLane(new CardInstance(card,side),move.lane);
                 if(!limited && card.HasKeyword(CardKeyword.Draw))game.DrawCards(side,1);
                 if(card.HasKeyword(CardKeyword.Heal))game.ApplyHealToLeftAlly(side,move.lane,card.attack);
-                if(card.HasKeyword(CardKeyword.FrontDamage))game.ApplyFrontDamage(side,move.lane,card.attack);
-                if(!limited && card.HasKeyword(CardKeyword.Weapon) && move.target>=0)
-                    game.EquipAndSwingWeapon(side,card.attack,side==PlayerSide.Me?PlayerSide.Opponent:PlayerSide.Me,move.target);
+                if(card.HasKeyword(CardKeyword.FrontDamage))game.ApplyFrontDamage(side,move.lane,EffectDamage(card.attack, frontDamageCap));
+                if(!limited && simulateWeaponBattlecry && card.HasKeyword(CardKeyword.Weapon) && move.target>=0)
+                    game.EquipAndSwingWeapon(side,EffectDamage(card.attack, weaponDamageCap),side==PlayerSide.Me?PlayerSide.Opponent:PlayerSide.Me,move.target);
             }
         }
 

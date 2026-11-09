@@ -37,6 +37,7 @@ public static class ProductionGamePlayVerification
                 throw new Exception("Production Play startup/UI/input gate verification failed");
             if (flow.detector.CameraReady) throw new Exception("Camera should wait for real hardware in the PC fixture");
             Debug.Log("PRODUCTION_PLAY_STARTUP_PASS: actual MR scene frames advance, production UI builds, absent camera waits safely, gameplay waits for peer/hardware");
+            ProductionPolishVerification.Capture(ui, flow);
             Finish(0);
         }
         catch (Exception error) { Debug.LogException(error); Finish(1); }

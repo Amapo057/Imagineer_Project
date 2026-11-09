@@ -3,6 +3,7 @@
 /// </summary>
 public static class NetMsg
 {
+    public const string WeaponStrike = "WEAPON_STRIKE"; // source card ID, target lane, global turn
     public const string Seeking = "SEEKING";       // 아직 호스트/클라이언트를 못 정한 상태로 브로드캐스트
     public const string Host = "HOST";             // 호스트로 정해진 뒤 계속 브로드캐스트(재접속 대비)
     public const string GameStart = "GAME_START";  // 호스트가 선공/후공을 정해서 알려줄 때

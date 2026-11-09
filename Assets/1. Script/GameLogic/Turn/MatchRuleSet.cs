@@ -12,7 +12,7 @@ public sealed class MatchRuleSet
     public int openingHand = 6;
     public int cardsPerTurn = 1;
     public int drawSpellCards = 3;
-    public int healSpellAmount = 5;
+    public int healSpellAmount = 4;
     public int removeSpellDamage = GameRules.RemoveSpellDamage;
     public bool globalClear = true;
     public int sweepSpellDamage = 2;

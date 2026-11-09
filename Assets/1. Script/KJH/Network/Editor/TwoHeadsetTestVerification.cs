@@ -145,7 +145,7 @@ public static class TwoHeadsetTestVerification
             int starts = local.Starts;
             ui.Buttons["Rematch"].onClick.Invoke();
             Wait(local, remote, () => local.Starts > starts && Equal(local, remote), "UI rematch failed");
-            Check(local.Game.Board.me.HeroHealth == 20 && local.Game.Board.opponent.HeroHealth == 20, "Rematch HP not reset");
+            Check(local.Game.Board.me.HeroHealth == 25 && local.Game.Board.opponent.HeroHealth == 25, "Rematch HP not reset");
             ui.Refresh(); Check(local.StateCode().Length == 8, "Canonical state code missing");
             Debug.Log("TWO_HEADSET_UI_VERIFICATION_SUCCESS");
         }

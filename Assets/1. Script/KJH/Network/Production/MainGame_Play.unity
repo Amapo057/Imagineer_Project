@@ -797,6 +797,67 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 110664541}
   m_CullTransparentMesh: 1
+--- !u!1 &112831792
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 112831793}
+  - component: {fileID: 112831795}
+  - component: {fileID: 112831794}
+  m_Layer: 0
+  m_Name: Opponent Lane 3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &112831793
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 112831792}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 1, z: -0, w: -0.00000004371139}
+  m_LocalPosition: {x: 0.257, y: 0, z: 0.2447}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 169710967}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &112831794
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 112831792}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 601fb7d2c246027438516272249e7eae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KJH.Characters.CharacterSlotAnimationBridge
+  side: 1
+  laneIndex: 3
+--- !u!114 &112831795
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 112831792}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cbc2478d9c8c874e99638f112b68d7b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProductionOpponentView
+  lane: 3
+  modelScale: 0.1
 --- !u!1 &121945834
 GameObject:
   m_ObjectHideFlags: 0
@@ -991,7 +1052,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a15b1f1c00fa0f479c1b737f65877e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProductionCardSlot
-  session: {fileID: 1702164463}
+  session: {fileID: 1090065604}
   marker: {fileID: 1112192441}
   lane: 3
   modelScale: 0.1
@@ -1064,10 +1125,10 @@ Transform:
   - {fileID: 1010695227}
   - {fileID: 991526829}
   - {fileID: 1733323737}
-  - {fileID: 217641357}
-  - {fileID: 1056437128}
-  - {fileID: 830543984}
-  - {fileID: 1324461161}
+  - {fileID: 478433474}
+  - {fileID: 112831793}
+  - {fileID: 340990368}
+  - {fileID: 918304682}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &169710968
@@ -1089,67 +1150,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: afed67a48cf224da2a2751bc8e469ddc, type: 3}
   m_PrefabInstance: {fileID: 803702170}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &217641356
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 217641357}
-  - component: {fileID: 217641359}
-  - component: {fileID: 217641358}
-  m_Layer: 0
-  m_Name: Opponent Lane 3
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &217641357
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 217641356}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 1, z: -0, w: -0.00000004371139}
-  m_LocalPosition: {x: 0.257, y: 0, z: 0.2447}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 169710967}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &217641358
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 217641356}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 601fb7d2c246027438516272249e7eae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::KJH.Characters.CharacterSlotAnimationBridge
-  side: 1
-  laneIndex: 3
---- !u!114 &217641359
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 217641356}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8cbc2478d9c8c874e99638f112b68d7b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProductionOpponentView
-  lane: 3
-  modelScale: 0.1
 --- !u!1 &222597132
 GameObject:
   m_ObjectHideFlags: 0
@@ -1399,6 +1399,67 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 239372362}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &340990367
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 340990368}
+  - component: {fileID: 340990370}
+  - component: {fileID: 340990369}
+  m_Layer: 0
+  m_Name: Opponent Lane 1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &340990368
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 340990367}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 1, z: -0, w: -0.00000004371139}
+  m_LocalPosition: {x: -0.09740002, y: 0, z: 0.2447}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 169710967}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &340990369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 340990367}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 601fb7d2c246027438516272249e7eae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KJH.Characters.CharacterSlotAnimationBridge
+  side: 1
+  laneIndex: 1
+--- !u!114 &340990370
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 340990367}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cbc2478d9c8c874e99638f112b68d7b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProductionOpponentView
+  lane: 1
+  modelScale: 0.1
 --- !u!1 &358809303
 GameObject:
   m_ObjectHideFlags: 0
@@ -2008,7 +2069,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a15b1f1c00fa0f479c1b737f65877e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProductionCardSlot
-  session: {fileID: 1702164463}
+  session: {fileID: 1090065604}
   marker: {fileID: 1112192441}
   lane: 2
   modelScale: 0.1
@@ -2124,6 +2185,67 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 464660075}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &478433473
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 478433474}
+  - component: {fileID: 478433476}
+  - component: {fileID: 478433475}
+  m_Layer: 0
+  m_Name: Opponent Lane 2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &478433474
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 478433473}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 1, z: -0, w: -0.00000004371139}
+  m_LocalPosition: {x: 0.093299985, y: 0, z: 0.2447}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 169710967}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &478433475
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 478433473}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 601fb7d2c246027438516272249e7eae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KJH.Characters.CharacterSlotAnimationBridge
+  side: 1
+  laneIndex: 2
+--- !u!114 &478433476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 478433473}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cbc2478d9c8c874e99638f112b68d7b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProductionOpponentView
+  lane: 2
+  modelScale: 0.1
 --- !u!1 &518946902
 GameObject:
   m_ObjectHideFlags: 0
@@ -3455,67 +3577,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: afed67a48cf224da2a2751bc8e469ddc, type: 3}
---- !u!1 &830543983
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 830543984}
-  - component: {fileID: 830543986}
-  - component: {fileID: 830543985}
-  m_Layer: 0
-  m_Name: Opponent Lane 1
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &830543984
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 830543983}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 1, z: -0, w: -0.00000004371139}
-  m_LocalPosition: {x: -0.09740002, y: 0, z: 0.2447}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 169710967}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &830543985
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 830543983}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 601fb7d2c246027438516272249e7eae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::KJH.Characters.CharacterSlotAnimationBridge
-  side: 1
-  laneIndex: 1
---- !u!114 &830543986
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 830543983}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8cbc2478d9c8c874e99638f112b68d7b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProductionOpponentView
-  lane: 1
-  modelScale: 0.1
 --- !u!1 &843425450
 GameObject:
   m_ObjectHideFlags: 0
@@ -3642,6 +3703,67 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1122354340}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &918304681
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 918304682}
+  - component: {fileID: 918304684}
+  - component: {fileID: 918304683}
+  m_Layer: 0
+  m_Name: Opponent Lane 0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &918304682
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 918304681}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 1, z: -0, w: -0.00000004371139}
+  m_LocalPosition: {x: -0.27610004, y: 0, z: 0.2447}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 169710967}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &918304683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 918304681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 601fb7d2c246027438516272249e7eae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KJH.Characters.CharacterSlotAnimationBridge
+  side: 1
+  laneIndex: 0
+--- !u!114 &918304684
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 918304681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cbc2478d9c8c874e99638f112b68d7b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProductionOpponentView
+  lane: 0
+  modelScale: 0.1
 --- !u!1 &981221897
 GameObject:
   m_ObjectHideFlags: 0
@@ -4222,67 +4344,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1538948032}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1056437127
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1056437128}
-  - component: {fileID: 1056437130}
-  - component: {fileID: 1056437129}
-  m_Layer: 0
-  m_Name: Opponent Lane 2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1056437128
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1056437127}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 1, z: -0, w: -0.00000004371139}
-  m_LocalPosition: {x: 0.093299985, y: 0, z: 0.2447}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 169710967}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1056437129
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1056437127}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 601fb7d2c246027438516272249e7eae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::KJH.Characters.CharacterSlotAnimationBridge
-  side: 1
-  laneIndex: 2
---- !u!114 &1056437130
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1056437127}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8cbc2478d9c8c874e99638f112b68d7b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProductionOpponentView
-  lane: 2
-  modelScale: 0.1
 --- !u!1 &1076192031
 GameObject:
   m_ObjectHideFlags: 0
@@ -4504,6 +4565,114 @@ MonoBehaviour:
     ReEnterDistance: 0.02
   _closeDistanceThreshold: 0.001
   _tiebreakerScore: 0
+--- !u!1 &1090065600
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1090065605}
+  - component: {fileID: 1090065604}
+  - component: {fileID: 1090065603}
+  - component: {fileID: 1090065602}
+  - component: {fileID: 1090065601}
+  m_Layer: 0
+  m_Name: Production Game Flow
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1090065601
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1090065600}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf4cafba8c67ee24eb4f04a7ff11a13f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProductionWeaponInput
+--- !u!114 &1090065602
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1090065600}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95ccdd0c1c174b44385afee4e49645b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProductionSeating
+  field: {fileID: 169710967}
+  head: {fileID: 690078069}
+  anchor: {fileID: 1633533945}
+  marker: {fileID: 1112192441}
+  localObjects:
+  - {fileID: 145558814}
+  - {fileID: 456669633}
+  - {fileID: 1891281238}
+  - {fileID: 576067969}
+  - {fileID: 1010695227}
+  - {fileID: 518946903}
+  remoteObjects:
+  - {fileID: 478433474}
+  - {fileID: 340990368}
+  - {fileID: 112831793}
+  - {fileID: 918304682}
+--- !u!114 &1090065603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1090065600}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9aab7b92ea3e1074d9e6f4ec259f806e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProductionGameUI
+  font: {fileID: 11400000, guid: 90b1e16befc01134da66f584cb5cdaf6, type: 2}
+  tableMaterial: {fileID: 2100000, guid: d23466249c35e9c4da3e9a773c544bf0, type: 2}
+  viewCamera: {fileID: 690078069}
+  dwellSeconds: 1.5
+--- !u!114 &1090065604
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1090065600}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ccd9bf4e73203141af05d9e779d87e4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProductionGameController
+  Database: {fileID: 11400000, guid: 04eaad98e0ae4b15ac8d08612693ab1b, type: 2}
+  hud: {fileID: 1900000006}
+  detector: {fileID: 1112192439}
+  anchor: {fileID: 1633533945}
+  seating: {fileID: 1090065602}
+--- !u!4 &1090065605
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1090065600}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1112192438
 GameObject:
   m_ObjectHideFlags: 0
@@ -5201,67 +5370,6 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
---- !u!1 &1324461160
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1324461161}
-  - component: {fileID: 1324461163}
-  - component: {fileID: 1324461162}
-  m_Layer: 0
-  m_Name: Opponent Lane 0
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1324461161
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1324461160}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 1, z: -0, w: -0.00000004371139}
-  m_LocalPosition: {x: -0.27610004, y: 0, z: 0.2447}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 169710967}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1324461162
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1324461160}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 601fb7d2c246027438516272249e7eae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::KJH.Characters.CharacterSlotAnimationBridge
-  side: 1
-  laneIndex: 0
---- !u!114 &1324461163
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1324461160}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8cbc2478d9c8c874e99638f112b68d7b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProductionOpponentView
-  lane: 0
-  modelScale: 0.1
 --- !u!1 &1378275840
 GameObject:
   m_ObjectHideFlags: 0
@@ -5939,100 +6047,6 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
---- !u!1 &1702164460
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1702164464}
-  - component: {fileID: 1702164463}
-  - component: {fileID: 1702164462}
-  - component: {fileID: 1702164461}
-  m_Layer: 0
-  m_Name: Production Game Flow
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1702164461
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1702164460}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 95ccdd0c1c174b44385afee4e49645b2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProductionSeating
-  field: {fileID: 169710967}
-  head: {fileID: 690078069}
-  anchor: {fileID: 1633533945}
-  marker: {fileID: 1112192441}
-  localObjects:
-  - {fileID: 456669633}
-  - {fileID: 1891281238}
-  - {fileID: 576067969}
-  - {fileID: 145558814}
-  - {fileID: 1010695227}
-  - {fileID: 518946903}
-  remoteObjects:
-  - {fileID: 1324461161}
-  - {fileID: 217641357}
-  - {fileID: 1056437128}
-  - {fileID: 830543984}
---- !u!114 &1702164462
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1702164460}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9aab7b92ea3e1074d9e6f4ec259f806e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProductionGameUI
-  font: {fileID: 11400000, guid: 90b1e16befc01134da66f584cb5cdaf6, type: 2}
-  viewCamera: {fileID: 690078069}
-  dwellSeconds: 1.5
---- !u!114 &1702164463
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1702164460}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ccd9bf4e73203141af05d9e779d87e4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProductionGameController
-  Database: {fileID: 11400000, guid: 04eaad98e0ae4b15ac8d08612693ab1b, type: 2}
-  hud: {fileID: 1900000006}
-  detector: {fileID: 1112192439}
-  anchor: {fileID: 1633533945}
-  seating: {fileID: 1702164461}
---- !u!4 &1702164464
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1702164460}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1710524145
 GameObject:
   m_ObjectHideFlags: 0
@@ -6789,7 +6803,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a15b1f1c00fa0f479c1b737f65877e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProductionCardSlot
-  session: {fileID: 1702164463}
+  session: {fileID: 1090065604}
   marker: {fileID: 1112192441}
   lane: 1
   modelScale: 0.1
@@ -8529,7 +8543,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a15b1f1c00fa0f479c1b737f65877e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProductionCardSlot
-  session: {fileID: 1702164463}
+  session: {fileID: 1090065604}
   marker: {fileID: 1112192441}
   lane: 0
   modelScale: 0.1
@@ -8546,4 +8560,4 @@ SceneRoots:
   - {fileID: 169710967}
   - {fileID: 564928279}
   - {fileID: 759205667}
-  - {fileID: 1702164464}
+  - {fileID: 1090065605}

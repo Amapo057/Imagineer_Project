@@ -55,9 +55,15 @@ public static class ProductionGameVerification
             var status = (TMPro.TextMeshProUGUI)typeof(ProductionGameUI).GetField("statusText", Private).GetValue(menu);
             Check(status.text.Contains("내 턴"), "Waiting hardware changed the displayed turn");
             flow.seating = null; UnityEngine.Object.DestroyImmediate(waitingSeat);
-            foreach (int missing in new[] { 9, 12, 18, 19 })
+            var units = flow.Database.allCards.Where(c => c != null && c.cardType == CardType.Unit).ToArray();
+            var duplicateModels = units.Where(c => c.hologramPrefab != null).GroupBy(c => c.hologramPrefab)
+                .Where(g => g.Count() > 1).ToArray();
+            Check(duplicateModels.Length == 0, "A character model is assigned to multiple cards: " +
+                string.Join("; ", duplicateModels.Select(g => g.Key.name + "=" + string.Join(",", g.Select(c => c.cardId)))));
+            var missingModels = units.Where(c => c.hologramPrefab == null).ToArray();
+            foreach (var missing in missingModels)
             {
-                var tokenCard = new CardInstance(flow.Database.GetCardById(missing), PlayerSide.Me);
+                var tokenCard = new CardInstance(missing, PlayerSide.Me);
                 var token = ProductionCardLabel.Create(tokenCard, flow.transform);
                 var view = token.GetComponent<ProductionCardLabel>(); Call(view, "LateUpdate");
                 var text = token.GetComponent<TMPro.TextMeshPro>(); text.ForceMeshUpdate();
@@ -66,7 +72,8 @@ public static class ProductionGameVerification
                 Check(text.text.EndsWith(tokenCard.currentAttack + " / 1"), "Fallback token stats did not update");
                 UnityEngine.Object.DestroyImmediate(token);
             }
-            Debug.Log("PRODUCTION_FALLBACK_LABEL_PASS: four missing models have live card/stat labels");
+            Debug.Log("PRODUCTION_UNIQUE_MODEL_PASS: " + (units.Length - missingModels.Length) + " unique character assignments");
+            Debug.Log("PRODUCTION_FALLBACK_LABEL_PASS: " + missingModels.Length + " missing models have live card/stat labels");
             Debug.Log("PRODUCTION_READINESS_UI_PASS: direct HUD and physical card blocked, actual turn stays visible");
             Check(flow.TryPlacePhysicalCard(1, 0), "Production physical unit rejected");
             Check(flow.Game.Board.me.currentCost == 0 && flow.Game.Board.me.lanes[0].data.cardId == 1, "Physical cost/lane mismatch");
@@ -88,6 +95,23 @@ public static class ProductionGameVerification
             Call(net, "HandleLine", "GAME_START|PEER"); Call(net, "Update");
             Check(flow.Ready && flow.Game.Board.me.lanes.All(c => c == null) && flow.Game.Board.opponent.lanes.All(c => c == null), "Reconnect retained previous board");
             Check(flow.Game.Board.me.isSecondPlayer, "Reconnected starter mapping wrong");
+            flow.Game.Board.me.lanes[0] = new CardInstance(flow.Database.GetCardById(5), PlayerSide.Me);
+            flow.Game.Board.opponent.currentCost = 8;
+            Call(net, "HandleLine", "CARD_PLAYED|15|0"); Call(net, "Update");
+            string strike = "WEAPON_STRIKE|15|0|" + flow.Game.TurnNumber;
+            Call(net, "HandleLine", strike); Call(net, "Update");
+            Check(flow.Game.Board.me.lanes[0].currentHealth == 2, "Actual HUD/controller failed to arm/apply remote weapon");
+            Call(net, "HandleLine", strike); Call(net, "Update");
+            Check(flow.Game.Board.me.lanes[0].currentHealth == 2, "Actual controller accepted duplicate weapon");
+            flow.Game.StartGame(PlayerSide.Me, dealCards: false); Call(flow, "OnStarted", PlayerSide.Me);
+            Array.Clear(flow.Game.Board.me.lanes, 0, 4); Array.Clear(flow.Game.Board.opponent.lanes, 0, 4);
+            flow.Game.Board.me.currentCost = 8;
+            flow.Game.Board.opponent.lanes[0] = new CardInstance(flow.Database.GetCardById(5), PlayerSide.Opponent);
+            Check(flow.TryPlacePhysicalCard(15, 0) && flow.PendingWeapons == 1, "Physical weapon card did not grant charge");
+            Check(!flow.TryStrikeWeapon(0) && flow.PendingWeapons == 1 && flow.Game.Board.opponent.lanes[0].currentHealth == 4,
+                "Failed send consumed charge or caused local-only damage");
+            Check(flow.GetComponent<ProductionWeaponInput>() != null && UnityEngine.Object.FindFirstObjectByType<WeaponManager>() != null, "Weapon input/hand scene wiring missing");
+            Debug.Log("PRODUCTION_WEAPON_INTEGRATION_PASS: actual physical card, actual remote HUD, duplicate rejection, failed-send preservation, hand wiring");
             var ui = UnityEngine.Object.FindFirstObjectByType<ProductionGameUI>(); ui.BuildNow();
             Check(!ui.Buttons.ContainsKey("PlaceCard") && !ui.Buttons.ContainsKey("Spell24"), "Production has synthetic card controls");
             Debug.Log("PRODUCTION_GAME_INTEGRATION_SUCCESS: actual MR scene; physical card/mana/turn/replay guards; actual HUD remote input; physical spell/draw; reconnect reset; production controls");
