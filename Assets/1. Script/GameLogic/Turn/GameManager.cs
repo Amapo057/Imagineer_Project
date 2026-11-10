@@ -356,15 +356,14 @@ public class GameManager
                 var defender = defenderBoard.lanes[i];
                 if (defender != null && defender.IsAlive)
                 {
-                    defender.TakeDamage(attacker.currentAttack);
+                    // 양쪽 공격력을 먼저 확정하고 함께 피해 적용. 이번 교전에서 죽어도 피해를 준다.
+                    int outgoing = attacker.currentAttack;
+                    int incoming = defender.currentAttack;
+                    bool retaliates = Rules.mutualMinionDamage || defender.data.HasKeyword(CardKeyword.Counter);
+                    defender.TakeDamage(outgoing);
+                    if (retaliates) attacker.TakeDamage(incoming);
                     OnMinionHit?.Invoke(defenderSide, i);
-
-                    // "반격" 능력이 있을 때만 공격자도 피해를 입음 (기본은 공격자 무피해)
-                    if (defender.data.HasKeyword(CardKeyword.Counter))
-                    {
-                        attacker.TakeDamage(defender.currentAttack);
-                        OnMinionHit?.Invoke(attackerSide, i);
-                    }
+                    if (retaliates) OnMinionHit?.Invoke(attackerSide, i);
                 }
                 else
                 {

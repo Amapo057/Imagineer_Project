@@ -75,6 +75,9 @@ public static class ProductionGameVerification
             Debug.Log("PRODUCTION_UNIQUE_MODEL_PASS: " + (units.Length - missingModels.Length) + " unique character assignments");
             Debug.Log("PRODUCTION_FALLBACK_LABEL_PASS: " + missingModels.Length + " missing models have live card/stat labels");
             Debug.Log("PRODUCTION_READINESS_UI_PASS: direct HUD and physical card blocked, actual turn stays visible");
+            Check(!flow.TryPlacePhysicalCard(1, 0), "Unconfirmed physical hand was playable");
+            while (VRGameSession.ConfirmPhysicalDraw(PlayerSide.Me)) { }
+            while (VRGameSession.ConfirmPhysicalDraw(PlayerSide.Opponent)) { }
             Check(flow.TryPlacePhysicalCard(1, 0), "Production physical unit rejected");
             Check(flow.Game.Board.me.currentCost == 0 && flow.Game.Board.me.lanes[0].data.cardId == 1, "Physical cost/lane mismatch");
             Check(!flow.TryPlacePhysicalCard(5, 1), "Insufficient mana accepted");
@@ -95,14 +98,16 @@ public static class ProductionGameVerification
             Call(net, "HandleLine", "GAME_START|PEER"); Call(net, "Update");
             Check(flow.Ready && flow.Game.Board.me.lanes.All(c => c == null) && flow.Game.Board.opponent.lanes.All(c => c == null), "Reconnect retained previous board");
             Check(flow.Game.Board.me.isSecondPlayer, "Reconnected starter mapping wrong");
+            while (VRGameSession.ConfirmPhysicalDraw(PlayerSide.Me)) { }
+            while (VRGameSession.ConfirmPhysicalDraw(PlayerSide.Opponent)) { }
             flow.Game.Board.me.lanes[0] = new CardInstance(flow.Database.GetCardById(5), PlayerSide.Me);
             flow.Game.Board.opponent.currentCost = 8;
             Call(net, "HandleLine", "CARD_PLAYED|15|0"); Call(net, "Update");
             string strike = "WEAPON_STRIKE|15|0|" + flow.Game.TurnNumber;
             Call(net, "HandleLine", strike); Call(net, "Update");
-            Check(flow.Game.Board.me.lanes[0].currentHealth == 2, "Actual HUD/controller failed to arm/apply remote weapon");
+            Check(flow.Game.Board.me.lanes[0].currentHealth == 1, "Actual HUD/controller failed to arm/apply remote weapon");
             Call(net, "HandleLine", strike); Call(net, "Update");
-            Check(flow.Game.Board.me.lanes[0].currentHealth == 2, "Actual controller accepted duplicate weapon");
+            Check(flow.Game.Board.me.lanes[0].currentHealth == 1, "Actual controller accepted duplicate weapon");
             flow.Game.StartGame(PlayerSide.Me, dealCards: false); Call(flow, "OnStarted", PlayerSide.Me);
             Array.Clear(flow.Game.Board.me.lanes, 0, 4); Array.Clear(flow.Game.Board.opponent.lanes, 0, 4);
             flow.Game.Board.me.currentCost = 8;

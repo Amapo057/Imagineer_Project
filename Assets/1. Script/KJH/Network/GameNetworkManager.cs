@@ -74,7 +74,7 @@ public class GameNetworkManager : MonoBehaviour
         var text = new StringBuilder(domain).Append('|').Append(Application.buildGUID).Append('|').Append(JsonUtility.ToJson(new MatchRuleSet()))
             .Append('|').Append(GameRules.LaneCount).Append('|').Append(GameRules.DeckSize)
             .Append('|').Append(GameRules.MaxCost).Append('|').Append(GameRules.SecondPlayerStartingCost)
-            .Append('|').Append(ProductionWeaponState.DamageCap);
+            .Append("|weapon=attack");
         if (database != null)
             foreach (var c in database.allCards.Where(c => c != null).OrderBy(c => c.cardId))
                 text.Append('|').Append(c.cardId).Append(':').Append(c.cost).Append(':').Append(c.attack)

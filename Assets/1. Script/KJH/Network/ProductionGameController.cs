@@ -60,7 +60,11 @@ public sealed class ProductionGameController : MonoBehaviour
         Network.OnWeaponStrikeReceived += ReceiveWeapon;
         if (Network.Connected) Network.RetryConnection();
     }
-    void Awake() => Initialize();
+    void Awake()
+    {
+        Initialize();
+        if (GetComponent<AutomaticPhysicalDraw>() == null) gameObject.AddComponent<AutomaticPhysicalDraw>();
+    }
     void OnStarted(PlayerSide first) { Ready = true; VRGameSession.NetworkReady = true; used.Clear(); weapons = new ProductionWeaponState(); Starts++; LastAction = "연결 완료. 실물 카드를 내 필드에 놓으세요."; }
     void OnDisconnected() { Ready = false; VRGameSession.NetworkReady = false; LastAction = "연결이 끊겼습니다. 재연결 뒤 새 판으로 시작합니다."; }
     void OnReset() { Ready = false; VRGameSession.NetworkReady = false; used.Clear(); weapons = new ProductionWeaponState(); }
@@ -83,9 +87,11 @@ public sealed class ProductionGameController : MonoBehaviour
         if (used.Contains(id)) { LastAction = data.cardName + ": 이번 판에 이미 사용한 카드입니다."; return false; }
         if (board.lanes[lane] != null) { LastAction = (lane + 1) + "번 칸에 기물이 있습니다. 빈 칸에 놓아 주세요."; return false; }
         if (board.currentCost < data.cost) { LastAction = $"코스트가 {data.cost - board.currentCost} 부족합니다. 필요 {data.cost} / 남음 {board.currentCost}"; return false; }
+        if (VRGameSession.PhysicalHandCount(PlayerSide.Me) <= 0) { LastAction = "먼저 실물 카드를 뽑고 뽑기 확인을 눌러 주세요."; return false; }
         var card = new CardInstance(data, PlayerSide.Me);
         if (!board.TryPlaceOnLane(card, lane)) return false;
         board.currentCost -= data.cost; used.Add(id);
+        VRGameSession.ConsumePhysicalCard(PlayerSide.Me);
         Network.SendCardPlayed(id, lane);
         if (data.HasKeyword(CardKeyword.Draw)) Game.DrawCards(PlayerSide.Me, 1);
         if (data.HasKeyword(CardKeyword.Heal)) Game.ApplyHealToLeftAlly(PlayerSide.Me, lane, card.currentAttack);

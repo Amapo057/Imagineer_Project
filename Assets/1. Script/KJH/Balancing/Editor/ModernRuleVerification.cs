@@ -30,6 +30,7 @@ namespace KJH.Balancing
         }
         public static void Verify()
         {
+            VerifyMutualCombat();
             var body=Card();var g=new GameManager();int drawn=0;g.OnCardDrawn+=(s,c)=>drawn++;
             for(int i=0;i<20;i++){g.Board.me.deck.Add(body);g.Board.opponent.deck.Add(body);}
             g.StartGame(PlayerSide.Me);
@@ -97,7 +98,11 @@ namespace KJH.Balancing
             Check(VRGameSession.Game.Board.me.HeroHealth==25&&VRGameSession.PendingPhysicalDraws(PlayerSide.Me)==7,"Physical deck opening allocation incorrect");
             VRGameSession.Game.DrawCards(PlayerSide.Me,14);
             Check(VRGameSession.Game.Board.me.HeroHealth==25,"Unconfirmed physical draws must not cause fatigue");
-            for(int i=0;i<20;i++)VRGameSession.ConfirmPhysicalDraw(PlayerSide.Me);
+            for(int i=0;i<12;i++)VRGameSession.ConfirmPhysicalDraw(PlayerSide.Me);
+            Check(VRGameSession.PhysicalHandCount(PlayerSide.Me)==12,"Physical hand cap missing");
+            for(int i=0;i<12;i++)VRGameSession.ConsumePhysicalCard(PlayerSide.Me);
+            VRGameSession.Game.DrawCards(PlayerSide.Me,9);
+            for(int i=0;i<8;i++)VRGameSession.ConfirmPhysicalDraw(PlayerSide.Me);
             Check(VRGameSession.Game.Board.me.HeroHealth==24,"Physical draw requests beyond 20 must produce fatigue");
             VRGameSession.ResetGame();
             VerifyPhysicalSpellInput();
@@ -105,8 +110,46 @@ namespace KJH.Balancing
             foreach(var c in new[]{body,draw,heal,clear,big,buff})UnityEngine.Object.DestroyImmediate(c);
         }
 
+        static void VerifyMutualCombat()
+        {
+            foreach (bool counter in new[] { false, true })
+            foreach (int attackHealth in new[] { 2, 5 })
+            foreach (int defendHealth in new[] { 2, 4 })
+            {
+                var game = Isolated();
+                var attackData = Card(3, attackHealth);
+                var defendData = Card(2, defendHealth);
+                defendData.keywords = counter ? CardKeyword.Counter : CardKeyword.None;
+                var attack = new CardInstance(attackData, PlayerSide.Opponent);
+                var defend = new CardInstance(defendData, PlayerSide.Me);
+                game.Board.opponent.lanes[0] = attack; game.Board.me.lanes[0] = defend;
+                string events = "";
+                game.OnMinionAttacked += (side, lane) => events += "A";
+                game.OnMinionHit += (side, lane) =>
+                {
+                    Check(attack.currentHealth == attackHealth - 2 && defend.currentHealth == defendHealth - 3,
+                        "Both combat damages must apply before hit events");
+                    events += side == PlayerSide.Me ? "D" : "R";
+                    defend.currentAttack = 100; // Hit listeners cannot change this exchange's damage.
+                };
+                game.EndTurn();
+                Check(events == "" && attack.currentHealth == attackHealth && defend.currentHealth == defendHealth,
+                    "First turn must not attack");
+                game.EndTurn();
+                Check(events == "ADR", "Normal combat must notify attack, defender hit and attacker hit once each");
+                Check((game.Board.me.lanes[0] != null) == (defendHealth > 3) &&
+                    (game.Board.opponent.lanes[0] != null) == (attackHealth > 2), "Mutual combat death cleanup mismatch");
+                Check(game.Board.me.HeroHealth == 25 && game.Board.opponent.HeroHealth == 25,
+                    "Minion combat must not damage heroes");
+                UnityEngine.Object.DestroyImmediate(attackData); UnityEngine.Object.DestroyImmediate(defendData);
+            }
+            Check(!MatchRuleSet.Legacy().mutualMinionDamage, "Legacy comparisons must retain old combat");
+            Debug.Log("MUTUAL_MINION_COMBAT_VERIFIED: ordinary and Counter defenders, lethal retaliation, simultaneous deaths, event ordering, first-turn guard");
+        }
+
         static void VerifyPhysicalSpellInput()
         {
+            while(VRGameSession.ConfirmPhysicalDraw(PlayerSide.Me)) { }
             var game=VRGameSession.Game;game.Board.me.currentCost=8;game.Board.me.heroDamage=10;
             var body=Card(2,8);
             game.Board.me.lanes[0]=new CardInstance(body,PlayerSide.Me);

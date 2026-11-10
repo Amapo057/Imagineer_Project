@@ -16,7 +16,7 @@ MonoBehaviour:
   cardName: "\ub9c8\ubc95-\uc218\ud638\uc758\ucd95\ubcf5"
   cardType: 1
   cardClass: {fileID: 0}
-  description: "\uc601\uc6c5 \uccb4\ub825\uc744 4 \ud68c\ubcf5\ud558\uace0 \uce74\ub4dc 1\uc7a5\uc744 \ubf51\uc2b5\ub2c8\ub2e4"
+  description: "영웅 체력 4 회복 + 카드 1장 드로우"
   cost: 1
   attack: 0
   health: 0

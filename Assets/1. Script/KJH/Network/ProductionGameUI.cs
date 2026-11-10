@@ -57,9 +57,9 @@ public sealed class ProductionGameUI : MonoBehaviour
         buildInfo = Label(panel, "Build", "빌드 " + session.BuildLabel + " / 데이터 " + session.Network.MatchSignature, 19, 30).gameObject;
         instructions = Label(panel, "Instructions", "머리를 움직여 흰 점을 버튼에 맞추고 1.5초 기다리세요.\n선택 뒤 다른 곳을 보세요. 컨트롤러 트리거로 즉시 선택도 가능합니다.", 21, 58).gameObject;
         statusText = Label(panel, "Status", "", 21, 200);
-        var scores = Row(panel, "Scores", 90); scoreRow = scores.gameObject;
-        myScore = Label(scores, "MyScore", "", 29, 90);
-        enemyScore = Label(scores, "EnemyScore", "", 29, 90);
+        var scores = Row(panel, "Scores", 125); scoreRow = scores.gameObject;
+        myScore = Label(scores, "MyScore", "", 29, 125);
+        enemyScore = Label(scores, "EnemyScore", "", 29, 125);
         myScore.color = new Color(0.35f, 0.91f, 0.89f);
         enemyScore.color = new Color(1f, 0.72f, 0.46f);
         var tabs = Row(panel, "Tabs", 58);
@@ -220,12 +220,16 @@ public sealed class ProductionGameUI : MonoBehaviour
             : game.IsGameOver ? (mine.IsDefeated ? "패배 · 다음 판에 다시 도전하세요" : other.IsDefeated ? "승리 · 전장을 지켜냈습니다" : "무승부")
             : $"{turn}  ·  {game.TurnNumber}번째 턴  ·  {order}";
         statusText.color = game.IsGameOver ? new Color(1f, 0.80f, 0.40f) : game.State.CurrentPlayer == PlayerSide.Me ? new Color(0.35f, 0.91f, 0.89f) : Ink;
-        myScore.text = $"나  <b>{mine.HeroHealth}</b> HP\n코스트 {mine.currentCost} / {VRGameSession.Coin.DisplayCapacity(PlayerSide.Me)}";
-        enemyScore.text = $"상대  <b>{other.HeroHealth}</b> HP\n코스트 {other.currentCost} / {VRGameSession.Coin.DisplayCapacity(PlayerSide.Opponent)}";
+        myScore.text = $"나  <b>{mine.HeroHealth}</b> HP\n코스트 {mine.currentCost} / {VRGameSession.Coin.DisplayCapacity(PlayerSide.Me)}\n손패 {VRGameSession.PhysicalHandCount(PlayerSide.Me)} · 덱 {VRGameSession.RemainingPhysicalDeck(PlayerSide.Me)} · 뽑음 {VRGameSession.ConfirmedPhysicalDraws(PlayerSide.Me)}";
+        enemyScore.text = $"상대  <b>{other.HeroHealth}</b> HP\n코스트 {other.currentCost} / {VRGameSession.Coin.DisplayCapacity(PlayerSide.Opponent)}\n손패 {VRGameSession.PhysicalHandCount(PlayerSide.Opponent)} · 덱 {VRGameSession.RemainingPhysicalDeck(PlayerSide.Opponent)} · 뽑음 {VRGameSession.ConfirmedPhysicalDraws(PlayerSide.Opponent)}";
         int pending = VRGameSession.PendingPhysicalDraws(PlayerSide.Me);
+        var automaticDraw = session.GetComponent<AutomaticPhysicalDraw>();
+        bool autoDraw = automaticDraw != null && automaticDraw.IsConfigured;
+        Buttons["DrawConfirm"].gameObject.SetActive(!autoDraw);
         fieldsText.text = game.IsGameOver ? "필드의 실물 카드를 치운 뒤 재대결을 선택하세요."
-            : pending > 0 ? $"<b>{pending}장</b>을 뽑아 주세요. 뽑은 카드마다 아래 확인 버튼을 누르세요."
-            : session.CanAct && session.PendingWeapons > 0 ? $"무기 {session.PendingWeapons}회 사용 가능 · 최대 2 피해\n주먹 쥔 손을 상대 기물 칸 밖에서 안으로 넣어 타격하세요."
+            : pending > 0 ? autoDraw ? $"<b>{pending}장</b>을 한 장씩 뽑아 주세요.\n덱 위 뒷면과 꺼내는 카드의 마커가 보이면 자동으로 집계됩니다."
+                : $"<b>{pending}장</b>을 뽑아 주세요. 뽑은 카드마다 아래 확인 버튼을 누르세요."
+            : session.CanAct && session.PendingWeapons > 0 ? $"무기 {session.PendingWeapons}회 사용 가능 · 피해는 해당 하수인의 공격력과 같습니다.\n주먹 쥔 손을 상대 기물 칸 밖에서 안으로 넣어 타격하세요."
             : session.CanAct ? "내 턴입니다. 빛나는 빈 칸에 실물 카드를 놓으세요.\n준비가 끝나면 턴 종료를 선택하세요." : "상대가 행동하고 있습니다. 테이블에서 전투를 확인하세요.";
         Buttons["DrawConfirm"].GetComponentInChildren<TextMeshProUGUI>().text = pending > 0 ? $"뽑기 확인  ·  남은 {pending}장" : "뽑기 완료";
         Buttons["EndTurn"].GetComponentInChildren<TextMeshProUGUI>().text = session.PendingWeapons > 0 ? "턴 종료 · 남은 무기 포기" : "턴 종료";

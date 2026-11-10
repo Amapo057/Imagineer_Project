@@ -95,7 +95,7 @@ public static class LocalNetworkVerification
             Check(first.net.SendWeaponStrike(15,1,weaponTurn),"Weapon packet send failed");
             Check(first.weapons.Strike(first.game,PlayerSide.Me,15,1,weaponTurn),"Local weapon failed");
             Wait(host,client,()=>second.weaponHits==1,"weapon damage synchronization",5);
-            Check(first.game.Board.opponent.lanes[1].currentHealth==2,"Weapon cap was not 2");Equal(host,client);
+            Check(first.game.Board.opponent.lanes[1].currentHealth==cards.GetCardById(5).health-cards.GetCardById(15).attack,"Weapon damage must equal card attack");Equal(host,client);
             first.net.SendWeaponStrike(15,1,weaponTurn);
             first.net.SendWeaponStrike(19,1,weaponTurn-1);
             Wait(host,client,()=>second.weaponMessages==3,"duplicate/stale weapon packets",5);
@@ -104,7 +104,7 @@ public static class LocalNetworkVerification
             Check(first.weapons.Strike(first.game,PlayerSide.Me,19,1,weaponTurn),"Second weapon failed");
             Wait(host,client,()=>second.weaponHits==2,"weapon lethal synchronization",5);
             Check(first.game.Board.opponent.lanes[1]==null,"Weapon did not remove dead target");Equal(host,client);
-            Debug.Log("LOCAL_TCP_WEAPON_PASS: two charges, max2 damage, duplicate/stale rejection, lethal board symmetry");
+            Debug.Log("LOCAL_TCP_WEAPON_PASS: two charges, damage equals card attack, duplicate/stale rejection, lethal board symmetry");
 
             first.game.Board.me.currentCost=8;second.game.Board.opponent.currentCost=8;
             int hpFirst=first.game.Board.me.HeroHealth,hpSecond=first.game.Board.opponent.HeroHealth;

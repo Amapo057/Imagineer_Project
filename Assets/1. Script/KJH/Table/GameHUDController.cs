@@ -320,11 +320,13 @@ public class GameHUDController : MonoBehaviour
         var board = game.Board.opponent;
         if (laneIndex < 0 || laneIndex >= board.lanes.Length) return;
         if (board.lanes[laneIndex] != null) return; // 이미 차 있으면 중복 메시지로 보고 무시
+        if (VRGameSession.PhysicalHandCount(PlayerSide.Opponent) <= 0) return;
 
         var minion = new CardInstance(data, PlayerSide.Opponent);
         if (!board.TryPlaceOnLane(minion, laneIndex)) return;
 
         board.currentCost -= data.cost;
+        VRGameSession.ConsumePhysicalCard(PlayerSide.Opponent);
 
         int amount = minion.currentAttack;
         if (data.HasKeyword(CardKeyword.Draw)) game.DrawCards(PlayerSide.Opponent, 1);

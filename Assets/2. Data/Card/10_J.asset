@@ -16,7 +16,7 @@ MonoBehaviour:
   cardName: "\uc778\uac04-\ud3ec\ub85c"
   cardType: 0
   cardClass: {fileID: 0}
-  description: "\uCE74\uB4DC 1\uC7A5\uC744 \uBF51\uC2B5\uB2C8\uB2E4"
+  description: "등장 시 카드 1장 드로우"
   cost: 1
   attack: 1
   health: 1

@@ -16,9 +16,9 @@ MonoBehaviour:
   cardName: "\uc545\ub9c8-\ubaa8\ub370"
   cardType: 0
   cardClass: {fileID: 0}
-  description: ""
+  description: "없음"
   cost: 4
-  attack: 5
-  health: 4
+  attack: 4
+  health: 6
   keywords: 0
   hologramPrefab: {fileID: 307647994291343033, guid: 328a558bcc5aa8549a266d721d4135fe, type: 3}

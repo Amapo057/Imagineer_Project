@@ -7,6 +7,11 @@ public static class ProductionWeaponVerification
     static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
     public static void CompleteChecks()
     {
+        Verify();
+        ProductionGameVerification.CompleteChecks();
+    }
+    public static void Verify()
+    {
         var cards = AssetDatabase.LoadAssetAtPath<CardDatabase>("Assets/2. Data/Card/CardDatabase.asset");
         var game = new GameManager(false, new MatchRuleSet { fatigueOnEmptyDraw = false }); game.StartGame(PlayerSide.Me, dealCards:false);
         var weapons = new ProductionWeaponState();
@@ -25,12 +30,11 @@ public static class ProductionWeaponVerification
         next.Board.opponent.lanes[0]=new CardInstance(cards.GetCardById(5),PlayerSide.Opponent);
         weapons.Arm(next,PlayerSide.Me,cards.GetCardById(15));
         Check(weapons.Strike(next,PlayerSide.Me,15,0,next.TurnNumber),"Fresh match weapon rejected");
-        Check(next.Board.opponent.lanes[0].currentHealth==2,"Damage cap mismatch");
+        Check(next.Board.opponent.lanes[0].currentHealth==cards.GetCardById(5).health-cards.GetCardById(15).attack,"Weapon damage must equal card attack");
         var slot=new GameObject("Weapon geometry test");slot.transform.SetPositionAndRotation(new Vector3(3,2,1),Quaternion.Euler(20,70,15));
         Check(ProductionWeaponInput.Contains(slot.transform,slot.transform.position+slot.transform.up*.1f),"Rotated slot hit failed");
         Check(!ProductionWeaponInput.Contains(slot.transform,slot.transform.position+slot.transform.right*.2f),"Adjacent lane accepted");
         UnityEngine.Object.DestroyImmediate(slot);
         Debug.Log("PRODUCTION_WEAPON_RULES_PASS: empty target, turn expiry, duplicate arm, rematch, rotated target volume");
-        ProductionGameVerification.CompleteChecks();
     }
 }

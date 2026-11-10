@@ -18,6 +18,7 @@ public static class VRGameSession
     private static readonly int[] pendingDraws = new int[2];
     private static readonly int[] allocatedDraws = new int[2];
     private static readonly int[] confirmedDraws = new int[2];
+    private static readonly int[] physicalHands = new int[2];
     private static readonly int[] deferredFatigue = new int[2];
 
     private static void CreateGame(PlayerSide firstPlayer)
@@ -26,6 +27,7 @@ public static class VRGameSession
         System.Array.Clear(pendingDraws, 0, 2);
         System.Array.Clear(allocatedDraws, 0, 2);
         System.Array.Clear(confirmedDraws, 0, 2);
+        System.Array.Clear(physicalHands, 0, 2);
         System.Array.Clear(deferredFatigue, 0, 2);
         // The physical deck is accounted by draw requests below, not a digital deck.
         instance = new GameManager(resourceExhaustionDrawEnabled: false,
@@ -33,10 +35,17 @@ public static class VRGameSession
         instance.OnDrawRequested += (side, count) =>
         {
             int i = (int)side;
-            int allowed = System.Math.Min(count, GameRules.DeckSize - allocatedDraws[i]);
-            pendingDraws[i] += allowed;
-            allocatedDraws[i] += allowed;
-            deferredFatigue[i] += count - allowed;
+            for (int n = 0; n < count; n++)
+            {
+                // Pending cards already reserve hand space; confirming them grants no extra draws.
+                if (physicalHands[i] + pendingDraws[i] >= instance.Rules.maxHandSize) break;
+                if (allocatedDraws[i] < GameRules.DeckSize)
+                {
+                    pendingDraws[i]++;
+                    allocatedDraws[i]++;
+                }
+                else deferredFatigue[i]++;
+            }
             ApplyConfirmedFatigue(side);
         };
         instance.StartGame(firstPlayer);
@@ -44,12 +53,22 @@ public static class VRGameSession
     }
 
     public static int PendingPhysicalDraws(PlayerSide side) { var game = Game; return pendingDraws[(int)side]; }
+    public static int ConfirmedPhysicalDraws(PlayerSide side) { var game = Game; return confirmedDraws[(int)side]; }
+    public static int RemainingPhysicalDeck(PlayerSide side) => GameRules.DeckSize - ConfirmedPhysicalDraws(side);
+    public static int PhysicalHandCount(PlayerSide side) { var game = Game; return physicalHands[(int)side]; }
+    public static bool ConsumePhysicalCard(PlayerSide side)
+    {
+        if (Game.IsGameOver || PhysicalHandCount(side) <= 0) return false;
+        physicalHands[(int)side]--;
+        return true;
+    }
     public static bool ConfirmPhysicalDraw(PlayerSide side)
     {
         int i = (int)side;
         if (Game.IsGameOver || pendingDraws[i] <= 0) return false;
         pendingDraws[i]--;
         confirmedDraws[i]++;
+        physicalHands[i]++;
         ApplyConfirmedFatigue(side);
         return true;
     }
@@ -70,8 +89,9 @@ public static class VRGameSession
     public static bool TryCastPhysicalSpell(CardData card, PlayerSide side, int lane = -1)
     {
         var game = Game;
-        if (card == null || usedPhysicalSpells.Contains((int)side * 100 + card.cardId)) return false;
-        if (!game.TryCastSpell(card, side, lane, consumeHand: false)) return false;
+        if (card == null || PhysicalHandCount(side) <= 0 || usedPhysicalSpells.Contains((int)side * 100 + card.cardId)) return false;
+        if (!game.TryCastSpell(card, side, lane, consumeHand: false,
+            onConsumed: () => ConsumePhysicalCard(side))) return false;
         usedPhysicalSpells.Add((int)side * 100 + card.cardId);
         return true;
     }

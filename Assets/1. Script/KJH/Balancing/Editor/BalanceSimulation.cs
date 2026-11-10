@@ -18,6 +18,7 @@ namespace KJH.Balancing
             public string name;
             public int pairs = 64, seed = 31000, opening = 5;
             public int secondFirstTurnBonus;
+            public int firstOpeningReduction;
             public bool coin;
             public bool modern, sweep, healDraw;
             public KeywordSnapshot[] keywordOverrides = Array.Empty<KeywordSnapshot>();
@@ -138,7 +139,8 @@ namespace KJH.Balancing
 
         static void Match(Trial trial,CardData[] cards,int policy,int seed,PlayerSide starter,Result metrics)
         {
-            var game=new GameManager(rules:trial.modern?(trial.rules??new MatchRuleSet()):MatchRuleSet.Legacy());
+            var game=new GameManager(resourceExhaustionDrawEnabled:!trial.modern,
+                rules:trial.modern?(trial.rules??new MatchRuleSet()):MatchRuleSet.Legacy());
             var human=cards.Where(c=>c.cardId<=16 || c.cardId>=24).ToList();
             var demon=cards.Where(c=>c.cardId<=9 || c.cardId>=17).ToList();
             if(trial.mirrorFaction==1)demon=human.ToList();
@@ -158,8 +160,25 @@ namespace KJH.Balancing
             };
             game.OnFaceHit+=side=> { if(attackerId>0) metrics.cards[attackerId-1].faceHits++; };
             game.StartGame(starter);
+            // Simulation-only opening adjustment: undo surplus draws from the end of the first hand.
+            // Returning them to the front preserves the exact deck order for subsequent draws.
+            if (trial.modern && trial.firstOpeningReduction > 0)
+            {
+                if (trial.firstOpeningReduction >= game.Rules.openingHand) throw new Exception("Invalid first opening reduction");
+                var first = game.Board.GetBoard(starter);
+                for (int n = 0; n < trial.firstOpeningReduction; n++)
+                {
+                    int last = first.hand.Count - 1;
+                    var returned = first.hand[last]; first.hand.RemoveAt(last); first.deck.Insert(0, returned);
+                    metrics.cards[returned.cardId - 1].drawn--;
+                }
+                if (first.hand.Count != game.Rules.openingHand - trial.firstOpeningReduction + game.Rules.cardsPerTurn)
+                    throw new Exception("First opening hand/draw mismatch");
+            }
             int openingCount=trial.modern?game.Rules.openingHand:trial.opening;
-            var opening=game.Board.me.hand.Take(openingCount).Concat(game.Board.opponent.hand.Take(openingCount)).Select(c=>c.cardId).ToArray();
+            var opening=game.Board.me.hand.Take(openingCount-(trial.modern&&starter==PlayerSide.Me?trial.firstOpeningReduction:0))
+                .Concat(game.Board.opponent.hand.Take(openingCount-(trial.modern&&starter==PlayerSide.Opponent?trial.firstOpeningReduction:0)))
+                .Select(c=>c.cardId).ToArray();
             var coin=new SecondPlayerCoin(game);
             var noise=new System.Random(seed+7919+(int)starter*97);
             int turns=0;
@@ -342,14 +361,14 @@ namespace KJH.Balancing
         {
             var me=game.Board.GetBoard(side);var enemy=game.Board.GetOpponentBoard(side);
             if(me.IsDefeated)return -10000;if(enemy.IsDefeated)return 10000;
-            return Value(me,policy)-Value(enemy,policy);
+            return Value(me,policy,game.Rules.mutualMinionDamage)-Value(enemy,policy,game.Rules.mutualMinionDamage);
         }
 
-        static double Value(PlayerBoardState board,int policy)
+        static double Value(PlayerBoardState board,int policy,bool mutualMinionDamage)
         {
             double health=policy==1?0.45:0.28,attack=policy==2?0.3:0.17,face=policy==2?4:3;
             return -board.heroDamage*face*10.0/board.maxHeroHealth+board.hand.Count*0.85+board.deck.Count*0.04+
-                board.lanes.Where(c=>c!=null&&c.IsAlive).Sum(c=>2.7+c.currentHealth*health+c.currentAttack*attack+(c.data.HasKeyword(CardKeyword.Counter)?0.7:0));
+                board.lanes.Where(c=>c!=null&&c.IsAlive).Sum(c=>2.7+c.currentHealth*health+c.currentAttack*attack+(!mutualMinionDamage&&c.data.HasKeyword(CardKeyword.Counter)?0.7:0));
         }
 
         static GameManager Clone(GameManager source)

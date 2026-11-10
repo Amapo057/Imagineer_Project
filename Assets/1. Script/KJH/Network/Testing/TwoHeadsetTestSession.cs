@@ -78,8 +78,10 @@ public sealed class TwoHeadsetTestSession : MonoBehaviour
         var card = Database.GetCardById(id); var board = Game.Board.GetBoard(side);
         int key = (int)side * 100 + id;
         if (!Ready || Game.IsGameOver || Game.State.CurrentPlayer != side || card == null || card.cardType != CardType.Unit ||
-            lane < 0 || lane >= 4 || board.lanes[lane] != null || board.currentCost < card.cost || usedUnits.Contains(key)) return false;
+            lane < 0 || lane >= 4 || board.lanes[lane] != null || board.currentCost < card.cost || usedUnits.Contains(key) ||
+            VRGameSession.PhysicalHandCount(side) <= 0) return false;
         board.lanes[lane] = new CardInstance(card, side); board.currentCost -= card.cost; usedUnits.Add(key);
+        VRGameSession.ConsumePhysicalCard(side);
         if (card.HasKeyword(CardKeyword.Draw)) Game.DrawCards(side, 1);
         if (card.HasKeyword(CardKeyword.Heal)) Game.ApplyHealToLeftAlly(side, lane, card.attack);
         if (card.HasKeyword(CardKeyword.FrontDamage)) Game.ApplyFrontDamage(side, lane, card.attack);

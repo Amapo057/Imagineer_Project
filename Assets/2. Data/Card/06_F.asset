@@ -16,7 +16,7 @@ MonoBehaviour:
   cardName: "\uacf5\uc6a9-\uc0e5\uc0e5\uc774"
   cardType: 0
   cardClass: {fileID: 0}
-  description: ""
+  description: "없음"
   cost: 1
   attack: 1
   health: 3
