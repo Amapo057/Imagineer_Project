@@ -1,7 +1,7 @@
 cardId,cardName,cost,attack,health,cardType,keywords,description
 1,공용-낼름멍,1,1,1,Unit,드로우,등장 시 카드 1장 드로우
 2,공용-맛잇냥,1,1,1,Unit,드로우,등장 시 카드 1장 드로우
-3,공용-미정,2,2,4,Unit,,없음
+3,공용-펭구,2,2,4,Unit,,없음
 4,공용-꽥꽥이,2,3,3,Unit,,없음
 5,공용-탐켄치,2,2,4,Unit,,없음
 6,공용-샥샥이,1,1,3,Unit,,없음
