@@ -3,7 +3,17 @@ guid: a46ab644ec5e0394d90a972876469663
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Sion
+    second: {fileID: 2100000, guid: d3332ee84ba372d47bcbfc90df9531b3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Weapon
+    second: {fileID: 2100000, guid: 720423389dd3c9f46aaa0f6bd6f8e00b, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

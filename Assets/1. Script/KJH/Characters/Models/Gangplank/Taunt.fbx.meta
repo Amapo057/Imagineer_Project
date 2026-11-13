@@ -3,7 +3,12 @@ guid: dfcc991ff78fb1b49aab10a1869226e1
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Gangplank_Skin05_MAT
+    second: {fileID: 2100000, guid: 3dc0356e44357774abd9fea994248f5c, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

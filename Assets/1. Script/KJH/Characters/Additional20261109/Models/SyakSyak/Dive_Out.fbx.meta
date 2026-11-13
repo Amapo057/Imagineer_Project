@@ -3,7 +3,32 @@ guid: b60c2ef66b675b146a8ce72c594c5877
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Basic
+    second: {fileID: 2100000, guid: 74461b681befa6f4f85baea452974a87, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Body
+    second: {fileID: 2100000, guid: f5b2b712f83c6dd409e79446fab5e92d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Ejector
+    second: {fileID: 2100000, guid: 671529193b9aba542885eda7ffe6e7b4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Props
+    second: {fileID: 2100000, guid: 77d634c785d028b428fbc708ed976e22, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Teeth
+    second: {fileID: 2100000, guid: e9dc168225233ef4c823674d9e6bb694, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

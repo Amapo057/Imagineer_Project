@@ -3,7 +3,47 @@ guid: c23c706c8fc7d2f4cb0ff8bd4da95960
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Cape
+    second: {fileID: 2100000, guid: 0f758a9e0178ad54d9f0bc0828aa42be, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: HeadHelmet
+    second: {fileID: 2100000, guid: e1ef2fc963de603409a948b4d42f6b2a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Helmet
+    second: {fileID: 2100000, guid: 43f07703c9acea840b12747d59481b5c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: L_Arm
+    second: {fileID: 2100000, guid: 138199417a1209141881a6183d6845fe, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: L_Arm_Only
+    second: {fileID: 2100000, guid: 46597a2687ad4ef43b5d89131eeca0ef, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Pantheon_Skin03_Mat
+    second: {fileID: 2100000, guid: 8a858cb4a70a4ab4dabdeca77d0390d6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Shield
+    second: {fileID: 2100000, guid: 069b8178f5830324cbf025f39387c9fe, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Spear
+    second: {fileID: 2100000, guid: bd81aeab02d0d694999aa66fb247437d, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

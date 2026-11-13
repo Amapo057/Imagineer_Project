@@ -8,7 +8,7 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/0. Scene/MainGame.unity
     guid: 4790482e33000414481b302db6a3a660
-  - enabled: 1
+  - enabled: 0
     path: Assets/0. Scene/0 KJS_HandTranparent.unity
     guid: 2b5e2b24e4bed419fb70a299ef8aa977
   - enabled: 0
@@ -21,8 +21,11 @@ EditorBuildSettings:
     path: Assets/0. Scene/Backup/2 KJS_.unity
     guid: f480ae744444744fc8048867eb74992f
   - enabled: 0
-    path: Assets/1. Script/KJH/Network/Production/MainGame_Play.unity
+    path: Assets/1. Script/KJS/Network/Production/MainGame_Play.unity
     guid: f1ae41f81ff44204b9fe6650118a17de
+  - enabled: 1
+    path: Assets/0. Scene/ForDisplay.unity
+    guid: 7527019d190e64930bd3cf08e1e9c3ab
   m_configObjects:
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: ae54bc764f50bd144b38f121989b1cd3, type: 2}
     com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 0bc1430afed14194698ed9e7ec6460f0, type: 2}

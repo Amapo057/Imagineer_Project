@@ -335,7 +335,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f78ea75d1f895409db1aca4100ce9624, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardSlot
-  fieldNum: 0
+  debugNum: {fileID: 0}
+  markerWorldPos: {fileID: 0}
 --- !u!1 &9216296524331687652
 GameObject:
   m_ObjectHideFlags: 0
@@ -402,7 +403,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 5239dc9f9ca24410e9c24a36569739a7, type: 2}
+  - {fileID: 2100000, guid: a7a05c430f1ec4897be2c35f4d19bdeb, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

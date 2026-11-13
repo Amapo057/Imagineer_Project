@@ -3,7 +3,27 @@ guid: 6dedb4fca2062104f8b3c882aff371f0
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Body
+    second: {fileID: 2100000, guid: 6d1f0a8d4409ed142a40871cb09f984c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Ears
+    second: {fileID: 2100000, guid: 2c7a33b588bfc9440892d69a3961fea1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Eyes
+    second: {fileID: 2100000, guid: 8d5a11d47825fd848b1f00b2ddb90101, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Wrench
+    second: {fileID: 2100000, guid: 68fa809b4444a894c8dbdedc7eb3ea7d, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

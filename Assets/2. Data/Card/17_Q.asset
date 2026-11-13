@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: 17_Q
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   cardId: 17
-  cardName: "\uc545\ub9c8-\uc544\ud2b8\ub85d\uc2a4"
+  cardName: "\uC545\uB9C8-\uC544\uD2B8\uB85D\uC2A4"
   cardType: 0
   cardClass: {fileID: 0}
-  description: "등장 시 카드 1장 드로우"
+  description: "\uB4F1\uC7A5 \uC2DC \uCE74\uB4DC 1\uC7A5 \uB4DC\uB85C\uC6B0"
   cost: 1
   attack: 1
   health: 1
   keywords: 8
-  hologramPrefab: {fileID: 0}
+  hologramPrefab: {fileID: 919132149155446097, guid: 864f4cbe040b7433d888ab371a65ad46, type: 3}
+  illustration: {fileID: 0}

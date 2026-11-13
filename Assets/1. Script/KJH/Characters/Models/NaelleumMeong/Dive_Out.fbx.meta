@@ -3,7 +3,57 @@ guid: 4792c29e1e0060f4a9e428819a99fab3
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Body
+    second: {fileID: 2100000, guid: c481e7c11d1e2a740bb6533767f2e633, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Collar
+    second: {fileID: 2100000, guid: 9ed46d33239694d4ab5aa697fff91058, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Ear
+    second: {fileID: 2100000, guid: 31e57314108ee8f469896868f0e68520, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Face_Eye
+    second: {fileID: 2100000, guid: 463968f39bd995545b524703d89d7c74, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Face_Eyebrow
+    second: {fileID: 2100000, guid: e79ed1d9bc6e61a4db9f39e83583641b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Face_Pupil
+    second: {fileID: 2100000, guid: 504a99e7d28831946bee618d2cd0a16e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Head
+    second: {fileID: 2100000, guid: 848cd7884adb3cb40bd1e95f62723b7a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Nail
+    second: {fileID: 2100000, guid: 3b15e6c79fe24e0409e50f1fb0e9954f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Tongue
+    second: {fileID: 2100000, guid: 073735de69711c94fba5efe14533c881, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Tooth
+    second: {fileID: 2100000, guid: 9d3b6d9057de52742a9fbdf89a8a6425, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
