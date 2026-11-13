@@ -211,22 +211,28 @@ public sealed class ProductionGameUI : MonoBehaviour
     {
         if (!Built) return;
         var net = session.Network; var game = session.Game; var mine = game.Board.me; var other = game.Board.opponent;
+        bool combat = session.CombatPlaying;
+        bool gameOver = game.IsGameOver && !combat;
         if (session.Ready != lastReady) { lastReady = session.Ready; ShowConnection(!session.Ready); }
         string role = net.Connected ? (net.IsHost ? "호스트" : "클라이언트") : "미연결";
-        string turn = session.Ready ? (game.IsGameOver ? (mine.IsDefeated ? "패배" : "승리") : (game.State.CurrentPlayer == PlayerSide.Me ? "내 턴" : "상대 턴")) : "연결 대기";
+        string turn = session.Ready ? (combat ? "전투 중" : gameOver ? (mine.IsDefeated ? "패배" : "승리") :
+            game.State.CurrentPlayer == PlayerSide.Me ? "내 턴" : "상대 턴") : "연결 대기";
         string order = session.Ready ? (mine.isSecondPlayer ? "후공" : "선공") : "미정";
         statusText.text = connectionPanel.activeSelf
             ? $"{net.StatusText}\n내 IP: {net.LocalAddresses}\n상대 IP: {net.PeerAddress}\n{order} · {turn}"
-            : game.IsGameOver ? (mine.IsDefeated ? "패배 · 다음 판에 다시 도전하세요" : other.IsDefeated ? "승리 · 전장을 지켜냈습니다" : "무승부")
+            : gameOver ? (mine.IsDefeated ? "패배 · 다음 판에 다시 도전하세요" : other.IsDefeated ? "승리 · 전장을 지켜냈습니다" : "무승부")
             : $"{turn}  ·  {game.TurnNumber}번째 턴  ·  {order}";
-        statusText.color = game.IsGameOver ? new Color(1f, 0.80f, 0.40f) : game.State.CurrentPlayer == PlayerSide.Me ? new Color(0.35f, 0.91f, 0.89f) : Ink;
-        myScore.text = $"나  <b>{mine.HeroHealth}</b> HP\n코스트 {mine.currentCost} / {VRGameSession.Coin.DisplayCapacity(PlayerSide.Me)}\n손패 {VRGameSession.PhysicalHandCount(PlayerSide.Me)} · 덱 {VRGameSession.RemainingPhysicalDeck(PlayerSide.Me)} · 뽑음 {VRGameSession.ConfirmedPhysicalDraws(PlayerSide.Me)}";
-        enemyScore.text = $"상대  <b>{other.HeroHealth}</b> HP\n코스트 {other.currentCost} / {VRGameSession.Coin.DisplayCapacity(PlayerSide.Opponent)}\n손패 {VRGameSession.PhysicalHandCount(PlayerSide.Opponent)} · 덱 {VRGameSession.RemainingPhysicalDeck(PlayerSide.Opponent)} · 뽑음 {VRGameSession.ConfirmedPhysicalDraws(PlayerSide.Opponent)}";
+        statusText.color = gameOver ? new Color(1f, 0.80f, 0.40f) : !combat && game.State.CurrentPlayer == PlayerSide.Me ? new Color(0.35f, 0.91f, 0.89f) : Ink;
+        int myHealth = session.TableFeedback?.DisplayedHeroHealth(PlayerSide.Me) ?? mine.HeroHealth;
+        int enemyHealth = session.TableFeedback?.DisplayedHeroHealth(PlayerSide.Opponent) ?? other.HeroHealth;
+        myScore.text = $"나  <b>{myHealth}</b> HP\n코스트 {mine.currentCost} / {VRGameSession.Coin.DisplayCapacity(PlayerSide.Me)}\n손패 {VRGameSession.PhysicalHandCount(PlayerSide.Me)} · 덱 {VRGameSession.RemainingPhysicalDeck(PlayerSide.Me)} · 뽑음 {VRGameSession.ConfirmedPhysicalDraws(PlayerSide.Me)}";
+        enemyScore.text = $"상대  <b>{enemyHealth}</b> HP\n코스트 {other.currentCost} / {VRGameSession.Coin.DisplayCapacity(PlayerSide.Opponent)}\n손패 {VRGameSession.PhysicalHandCount(PlayerSide.Opponent)} · 덱 {VRGameSession.RemainingPhysicalDeck(PlayerSide.Opponent)} · 뽑음 {VRGameSession.ConfirmedPhysicalDraws(PlayerSide.Opponent)}";
         int pending = VRGameSession.PendingPhysicalDraws(PlayerSide.Me);
         var automaticDraw = session.GetComponent<AutomaticPhysicalDraw>();
         bool autoDraw = automaticDraw != null && automaticDraw.IsConfigured;
         Buttons["DrawConfirm"].gameObject.SetActive(!autoDraw);
-        fieldsText.text = game.IsGameOver ? "필드의 실물 카드를 치운 뒤 재대결을 선택하세요."
+        fieldsText.text = combat ? "테이블에서 전투를 확인하세요."
+            : gameOver ? "필드의 실물 카드를 치운 뒤 재대결을 선택하세요."
             : pending > 0 ? autoDraw ? $"<b>{pending}장</b>을 한 장씩 뽑아 주세요.\n덱 위 뒷면과 꺼내는 카드의 마커가 보이면 자동으로 집계됩니다."
                 : $"<b>{pending}장</b>을 뽑아 주세요. 뽑은 카드마다 아래 확인 버튼을 누르세요."
             : session.CanAct && session.PendingWeapons > 0 ? $"무기 {session.PendingWeapons}회 사용 가능 · 피해는 해당 하수인의 공격력과 같습니다.\n주먹 쥔 손을 상대 기물 칸 밖에서 안으로 넣어 타격하세요."
@@ -237,8 +243,8 @@ public sealed class ProductionGameUI : MonoBehaviour
             Time.unscaledTime < feedbackUntil ? feedbackText : session.LastAction;
         foreach (var button in gameButtons) button.interactable = session.CanAct;
         Buttons["Coin"].interactable = session.CanAct && VRGameSession.Coin.CanUse(PlayerSide.Me);
-        Buttons["DrawConfirm"].interactable = session.HardwareReady && session.Ready && net.Connected && !game.IsGameOver && VRGameSession.PendingPhysicalDraws(PlayerSide.Me) > 0;
-        Buttons["Rematch"].interactable = session.Ready && net.Connected;
+        Buttons["DrawConfirm"].interactable = session.HardwareReady && session.Ready && net.Connected && !combat && !gameOver && VRGameSession.PendingPhysicalDraws(PlayerSide.Me) > 0;
+        Buttons["Rematch"].interactable = session.Ready && net.Connected && !combat;
     }
     static string Field(string title, PlayerBoardState board)
     {

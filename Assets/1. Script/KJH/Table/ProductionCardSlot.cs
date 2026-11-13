@@ -18,12 +18,13 @@ public sealed class ProductionCardSlot : MonoBehaviour
     {
         if (previous != session.Game)
         { previous = session.Game; candidate = -1; blockedUntilRemoved = true; }
-        var card = session.Game.Board.me.lanes[lane];
+        var card = session.TableFeedback != null
+            ? session.TableFeedback.DisplayedCard(PlayerSide.Me, lane) : session.Game.Board.me.lanes[lane];
         if (displayed == card) return;
         displayed = card;
         if (model != null) Destroy(model);
         if (card == null) return;
-        if (card.data.hologramPrefab == null) { model = ProductionCardLabel.Create(card, transform); return; }
+        if (card.data.hologramPrefab == null) { model = ProductionCardLabel.Create(card, transform, lane); return; }
         model = Instantiate(card.data.hologramPrefab, transform);
         model.transform.localPosition = Vector3.zero; model.transform.localRotation = Quaternion.identity;
         var p = transform.lossyScale; var s = model.transform.localScale * modelScale;

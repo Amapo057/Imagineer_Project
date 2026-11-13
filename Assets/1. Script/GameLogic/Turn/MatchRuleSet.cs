@@ -6,7 +6,7 @@ public sealed class MatchRuleSet
 {
     public int heroHealth = GameRules.StartingHeroHealth;
     public int maxHandSize = GameRules.MaxHandSize;
-    public bool permanentBuff = true;
+    public bool permanentBuff = false;
     public bool coinExceedsCap = true;
     public bool attackDamageToHero = true;
     public bool mutualMinionDamage = true;

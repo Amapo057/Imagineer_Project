@@ -25,12 +25,15 @@ namespace KJH.Characters
 
         void OnAttack(PlayerSide player, int lane)
         {
+            if (ProductionGameController.Current?.TableFeedback?.HandlesCombat(subscribed) == true) return;
             if (player == side && lane == laneIndex)
                 GetComponentInChildren<CharacterMotion>()?.Attack();
         }
 
         void OnHit(PlayerSide player, int lane)
         {
+            if (subscribed.State.CurrentPhase == TurnPhase.Combat &&
+                ProductionGameController.Current?.TableFeedback?.HandlesCombat(subscribed) == true) return;
             if (player == side && lane == laneIndex)
                 GetComponentInChildren<CharacterMotion>()?.Hit();
         }

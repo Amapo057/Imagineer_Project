@@ -67,6 +67,8 @@ public class GameHUDController : MonoBehaviour
     private System.Action networkTurn, networkCoin, networkDraw, networkDisconnected, networkRematch;
     private System.Action<int, int> networkSpell;
     private PlayerSide localSide = PlayerSide.Me;
+    private GameManager pendingResultGame;
+    private PlayerSide? pendingWinner;
 
     void Start()
     {
@@ -88,6 +90,11 @@ public class GameHUDController : MonoBehaviour
         // 따로 없어서, DemoTurnController(UpdateTurnText)와 동일하게 매 프레임 폴링해서 갱신함
         UpdateCostHealthText();
         UpdateOpponentFieldText();
+        if (pendingResultGame != null && ProductionGameController.Current?.CombatPlaying != true)
+        {
+            if (pendingResultGame == VRGameSession.Game) ShowResult(pendingWinner);
+            pendingResultGame = null;
+        }
     }
 
     // 물리 "End Turn" 버튼의 OnClick()에 연결
@@ -119,6 +126,7 @@ public class GameHUDController : MonoBehaviour
             if (!net.TrySendEndTurn(PlayerSide.Me, VRGameSession.Game.State.CurrentPlayer)) return;
         }
 
+        ProductionGameController.Current?.TableFeedback?.BindGame();
         VRGameSession.Game.EndTurn();
         UpdateCostHealthText();
     }
@@ -162,6 +170,7 @@ public class GameHUDController : MonoBehaviour
     public void ConfirmDrawnCard()
     {
         if (VRGameSession.RequireNetwork && ProductionGameController.Current != null && !ProductionGameController.Current.HardwareReady) return;
+        if (ProductionGameController.Current?.CombatPlaying == true) return;
         if (!VRGameSession.NetworkPlayAllowed) return;
         if (!VRGameSession.ConfirmPhysicalDraw(PlayerSide.Me)) return;
         var net = GameNetworkManager.Instance;
@@ -190,6 +199,7 @@ public class GameHUDController : MonoBehaviour
     [ContextMenu("재대결 테스트(디버그)")]
     public void OnRematchButtonClicked()
     {
+        if (ProductionGameController.Current?.CombatPlaying == true) return;
         if (!VRGameSession.NetworkPlayAllowed) return;
         var net = GameNetworkManager.Instance;
         if (net.Connected) net.SendRematch();
@@ -226,7 +236,12 @@ public class GameHUDController : MonoBehaviour
         game.OnGameOver += winner =>
         {
             AddLog(winner == null ? "무승부" : $"{SideLabel(winner.Value)} 승리");
-            ShowResult(winner);
+            if (ProductionGameController.Current?.CombatPlaying == true)
+            {
+                pendingResultGame = game;
+                pendingWinner = winner;
+            }
+            else ShowResult(winner);
         };
     }
 
@@ -253,6 +268,7 @@ public class GameHUDController : MonoBehaviour
         {
             // 상대가 이미 자기 턴에서 TrySendEndTurn을 통과한 뒤 보낸 메시지라
             // 여기서 다시 턴 체크 안 하고 그대로 반영함(lockstep)
+            ProductionGameController.Current?.TableFeedback?.BindGame();
             if (!VRGameSession.Game.IsGameOver) VRGameSession.Game.EndTurn();
         };
 
@@ -350,12 +366,16 @@ public class GameHUDController : MonoBehaviour
     {
         if (opponentFieldText == null) return;
 
+        var feedback = ProductionGameController.Current?.TableFeedback;
         var lanes = VRGameSession.Game.Board.opponent.lanes;
         var parts = new string[lanes.Length];
         for (int i = 0; i < lanes.Length; i++)
         {
-            var card = lanes[i];
-            parts[i] = card == null ? "-" : $"{card.data.cardName} {card.currentAttack}/{card.currentHealth}";
+            var card = feedback != null ? feedback.DisplayedCard(PlayerSide.Opponent, i) : lanes[i];
+            if (card == null) { parts[i] = "-"; continue; }
+            int attack = card.currentAttack, health = card.currentHealth;
+            feedback?.DisplayedStats(PlayerSide.Opponent, i, card, out attack, out health);
+            parts[i] = $"{card.data.cardName} {attack}/{health}";
         }
         opponentFieldText.text = "상대 필드  " + string.Join("   ", parts);
     }
@@ -399,7 +419,8 @@ public class GameHUDController : MonoBehaviour
     {
         GameManager game = VRGameSession.Game;
 
-        if (game.IsGameOver)
+        var feedback = ProductionGameController.Current?.TableFeedback;
+        if (game.IsGameOver && feedback?.IsPlaying != true)
         {
             if (healthText != null) healthText.text = "체력\n게임 종료";
             return;
@@ -415,7 +436,7 @@ public class GameHUDController : MonoBehaviour
 
         if (healthText != null)
         {
-            int remainingLives = myBoard.HeroHealth;
+            int remainingLives = feedback?.DisplayedHeroHealth(PlayerSide.Me) ?? myBoard.HeroHealth;
             healthText.text = $"체력\n{remainingLives} / {myBoard.maxHeroHealth}";
         }
     }

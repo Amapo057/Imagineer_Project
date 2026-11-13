@@ -14,8 +14,10 @@ public sealed class ProductionGameController : MonoBehaviour
     public bool HardwareReady => (detector == null || detector.CameraReady) && (anchor == null || anchor.IsReady) && (seating == null || seating.IsReady);
     public GameNetworkManager Network { get; private set; }
     public GameManager Game => VRGameSession.Game;
+    internal ProductionTableFeedback TableFeedback { get; set; }
+    public bool CombatPlaying => TableFeedback != null && TableFeedback.IsPlaying;
     public bool Ready { get; private set; }
-    public bool CanAct => HardwareReady && Ready && Network.Connected && !Game.IsGameOver && Game.State.CurrentPlayer == PlayerSide.Me;
+    public bool CanAct => HardwareReady && Ready && Network.Connected && !CombatPlaying && !Game.IsGameOver && Game.State.CurrentPlayer == PlayerSide.Me;
     public int Starts { get; private set; }
     public string BuildLabel => Application.version;
     public string LastAction { get; private set; } = "같은 APK를 실행하고 중앙 마커 0번으로 각자의 테이블을 맞추세요.";
@@ -70,8 +72,8 @@ public sealed class ProductionGameController : MonoBehaviour
     void OnReset() { Ready = false; VRGameSession.NetworkReady = false; used.Clear(); weapons = new ProductionWeaponState(); }
     public void EndTurn() { if (CanAct) hud.OnEndTurnButtonClicked(); }
     public void UseCoin() { if (CanAct) hud.OnCoinCardUsed(); }
-    public void ConfirmDraw() { if (HardwareReady && Ready && Network.Connected) hud.ConfirmDrawnCard(); }
-    public void Rematch() { if (!Ready || !Network.Connected) return; hud.OnRematchButtonClicked(); OnReset(); }
+    public void ConfirmDraw() { if (HardwareReady && Ready && Network.Connected && !CombatPlaying) hud.ConfirmDrawnCard(); }
+    public void Rematch() { if (!Ready || !Network.Connected || CombatPlaying) return; hud.OnRematchButtonClicked(); OnReset(); }
     public bool TryPlacePhysicalCard(int id, int lane)
     {
         if (!CanAct) { LastAction = ReadinessHint.Length > 0 ? ReadinessHint : Game.IsGameOver ? "게임이 끝났습니다. 재대결을 선택해 주세요." : "상대 턴입니다. 내 턴에 카드를 놓아 주세요."; return false; }

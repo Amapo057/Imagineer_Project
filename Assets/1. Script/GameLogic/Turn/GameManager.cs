@@ -306,7 +306,7 @@ public class GameManager
     }
 
     // 마법 "강화" 전용: side편 필드에 지금 나와 있는 아군 하수인 전체의 공격력을 amount만큼 즉시 올림.
-    // 현재 규칙은 영구 강화. 이전 규칙 비교에서만 tempAttackBonus로 턴 종료 시 복구함.
+    // 임시 강화는 이번 턴 전투가 끝날 때 제거할 수 있도록 따로 기록함.
     public void ApplyTurnEndBuffToAllies(PlayerSide side, int amount)
     {
         if (isGameOver) return;

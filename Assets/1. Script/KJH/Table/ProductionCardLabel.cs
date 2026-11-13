@@ -6,7 +6,8 @@ public sealed class ProductionCardLabel : MonoBehaviour
 {
     public CardInstance card;
     TextMeshPro label;
-    public static GameObject Create(CardInstance card, Transform parent)
+    int lane;
+    public static GameObject Create(CardInstance card, Transform parent, int lane = -1)
     {
         var root = new GameObject("Card " + card.data.cardId);
         root.transform.SetParent(parent, false);
@@ -14,6 +15,7 @@ public sealed class ProductionCardLabel : MonoBehaviour
         var scale = parent.lossyScale;
         root.transform.localScale = new Vector3(1f / scale.x, 1f / scale.y, 1f / scale.z);
         var view = root.AddComponent<ProductionCardLabel>(); view.card = card;
+        view.lane = lane;
         view.label = root.AddComponent<TextMeshPro>();
         view.label.font = Object.FindFirstObjectByType<ProductionGameUI>()?.font;
         view.label.outlineColor = Color.black; view.label.outlineWidth = 0.15f;
@@ -23,7 +25,9 @@ public sealed class ProductionCardLabel : MonoBehaviour
     }
     void LateUpdate()
     {
-        label.text = card.data.cardName + "\n" + card.currentAttack + " / " + card.currentHealth;
+        int attack = card.currentAttack, health = card.currentHealth;
+        if (lane >= 0) ProductionGameController.Current?.TableFeedback?.DisplayedStats(card.owner, lane, card, out attack, out health);
+        label.text = card.data.cardName + "\n" + attack + " / " + health;
         if (Camera.main != null) transform.rotation = Camera.main.transform.rotation;
     }
 }

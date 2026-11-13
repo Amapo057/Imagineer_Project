@@ -31,6 +31,7 @@ namespace KJH.Balancing
         public static void Verify()
         {
             VerifyMutualCombat();
+            VerifyWarCry();
             var body=Card();var g=new GameManager();int drawn=0;g.OnCardDrawn+=(s,c)=>drawn++;
             for(int i=0;i<20;i++){g.Board.me.deck.Add(body);g.Board.opponent.deck.Add(body);}
             g.StartGame(PlayerSide.Me);
@@ -79,15 +80,6 @@ namespace KJH.Balancing
                 Check(b.HeroHealth==21,"Global spell must never damage heroes");
             }
 
-            var buffGame=Isolated();var buff=Card();buff.cardType=CardType.Spell;buff.keywords=CardKeyword.Buff;
-            buffGame.Board.me.currentCost=8;buffGame.Board.me.hand.Add(buff);
-            buffGame.Board.me.lanes[0]=new CardInstance(big,PlayerSide.Me);
-            Check(buffGame.TryCastSpell(buff,PlayerSide.Me),"Buff spell rejected");
-            buffGame.EndTurn();buffGame.EndTurn();
-            Check(buffGame.Board.me.lanes[0].currentAttack==big.attack+3&&buffGame.Board.me.lanes[0].tempAttackBonus==0,"Buff must survive turn changes");
-            buffGame.Board.me.lanes[1]=new CardInstance(big,PlayerSide.Me);
-            Check(buffGame.Board.me.lanes[1].currentAttack==big.attack,"Future summons must not inherit buff");
-
             var fatigue=new GameManager(false,new MatchRuleSet{openingHand=0,cardsPerTurn=0});fatigue.StartGame(PlayerSide.Me);
             fatigue.DrawCards(PlayerSide.Me,2);
             Check(fatigue.Board.me.HeroHealth==22&&fatigue.Board.me.fatigueDamage==2,"Empty deck draw should deal fatigue 1 then 2");
@@ -106,8 +98,50 @@ namespace KJH.Balancing
             Check(VRGameSession.Game.Board.me.HeroHealth==24,"Physical draw requests beyond 20 must produce fatigue");
             VRGameSession.ResetGame();
             VerifyPhysicalSpellInput();
-            Debug.Log("MODERN_RULE_VERIFICATION_SUCCESS: HP25, opening6, draw1, hand12, drawSpell3, heal4, clearAllEight4, permanentBuff, fatigue, physical quota");
-            foreach(var c in new[]{body,draw,heal,clear,big,buff})UnityEngine.Object.DestroyImmediate(c);
+            Debug.Log("MODERN_RULE_VERIFICATION_SUCCESS: HP25, opening6, draw1, hand12, drawSpell3, heal4, clearAllEight4, oneTurnBuff, fatigue, physical quota");
+            foreach(var c in new[]{body,draw,heal,clear,big})UnityEngine.Object.DestroyImmediate(c);
+        }
+
+        public static void VerifyWarCry()
+        {
+            var database = AssetDatabase.LoadAssetAtPath<CardDatabase>("Assets/2. Data/Card/CardDatabase.asset");
+            var spell = database.GetCardById(27);
+            Check(spell != null && spell.cost == 1, "War Cry must cost one");
+            var unit = Card(2, 8);
+            try
+            {
+                var game = Isolated();
+                var allies = game.Board.me;
+                var enemies = game.Board.opponent;
+                allies.lanes[0] = new CardInstance(unit, PlayerSide.Me);
+                allies.hand.Add(spell);
+                Check(game.TryCastSpell(spell, PlayerSide.Me) && allies.currentCost == 0, "War Cry must be playable for one");
+                Check(allies.lanes[0].currentAttack == 5, "War Cry must immediately add three attack");
+                game.EndTurn();
+                Check(allies.lanes[0].currentAttack == 2 && enemies.HeroHealth == 25, "War Cry must expire even on the first turn without combat");
+                game.EndTurn();
+
+                allies.lanes[1] = new CardInstance(unit, PlayerSide.Me);
+                enemies.lanes[0] = new CardInstance(unit, PlayerSide.Opponent);
+                allies.hand.Add(spell);
+                Check(game.TryCastSpell(spell, PlayerSide.Me), "War Cry rejected before combat");
+                Check(allies.lanes[0].currentAttack == 5 && allies.lanes[1].currentAttack == 5 && enemies.lanes[0].currentAttack == 2,
+                    "War Cry must affect every existing ally and leave enemy attack unchanged");
+                allies.lanes[2] = new CardInstance(unit, PlayerSide.Me);
+                Check(allies.lanes[2].currentAttack == 2, "Future summons must not inherit War Cry");
+
+                game.EndTurn();
+                Check(enemies.lanes[0].currentHealth == 3 && enemies.HeroHealth == 18,
+                    "War Cry must apply to both minion and hero damage in this turn's combat");
+                Check(allies.lanes[0].currentAttack == 2 && allies.lanes[1].currentAttack == 2 &&
+                    allies.lanes[0].tempAttackBonus == 0 && allies.lanes[1].tempAttackBonus == 0,
+                    "War Cry must expire before the opposing turn");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(unit);
+            }
+            Debug.Log("WAR_CRY_VERIFICATION_SUCCESS");
         }
 
         static void VerifyMutualCombat()

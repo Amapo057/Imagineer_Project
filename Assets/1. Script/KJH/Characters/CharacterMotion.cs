@@ -11,6 +11,11 @@ namespace KJH.Characters
         public AnimationClip hitClip;
         readonly Queue<bool> pending = new Queue<bool>();
         Coroutine playback;
+        public bool IsPlaying => playback != null;
+        public float AttackDuration => attackClip != null ? attackClip.length : 0.5f;
+        public bool IsAttackAnimating => animator != null && animator.isActiveAndEnabled &&
+            (animator.GetCurrentAnimatorStateInfo(0).IsName("Attack") ||
+             (animator.IsInTransition(0) && animator.GetNextAnimatorStateInfo(0).IsName("Attack")));
 
         [ContextMenu("Preview/Attack")]
         public void Attack() => Enqueue(false);

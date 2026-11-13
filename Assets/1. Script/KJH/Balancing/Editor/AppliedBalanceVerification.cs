@@ -25,7 +25,7 @@ namespace KJH.Balancing
             }
             var rules = new MatchRuleSet();
             Check(rules.heroHealth == 25 && rules.openingHand == 6 && rules.cardsPerTurn == 1 && rules.maxHandSize == 12 &&
-                rules.mutualMinionDamage && rules.permanentBuff && rules.coinExceedsCap && rules.fatigueOnEmptyDraw &&
+                rules.mutualMinionDamage && !rules.permanentBuff && rules.coinExceedsCap && rules.fatigueOnEmptyDraw &&
                 rules.healSpellAmount == 4 && rules.drawSpellCards == 3 && rules.removeSpellDamage == 4 &&
                 rules.globalClear && rules.buffSpellAttack == 3, "Spreadsheet match rules mismatch");
             var target = ScriptableObject.CreateInstance<CardData>(); target.attack = 9; target.health = 20;

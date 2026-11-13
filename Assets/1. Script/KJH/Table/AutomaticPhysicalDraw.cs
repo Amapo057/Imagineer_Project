@@ -25,7 +25,7 @@ public sealed class AutomaticPhysicalDraw : MonoBehaviour
     {
         if (!IsConfigured || session == null) return;
         if (previous != session.Game) { previous = session.Game; tracker.Reset(); version = marker.MarkerVersion; }
-        if (!session.HardwareReady || !session.Ready || !session.Network.Connected || session.Game.IsGameOver ||
+        if (!session.HardwareReady || !session.Ready || !session.Network.Connected || session.CombatPlaying || session.Game.IsGameOver ||
             VRGameSession.PendingPhysicalDraws(PlayerSide.Me) <= 0) return;
         if (version == marker.MarkerVersion) return;
         version = marker.MarkerVersion;

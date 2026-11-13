@@ -28,6 +28,6 @@ public static class GameRules
     // 심판의낙뢰: 아군과 적군의 모든 하수인에게 주는 피해량.
     public const int RemoveSpellDamage = 4;
 
-    // 전쟁의함성: 시전할 때 필드에 있는 아군 하수인의 공격력을 영구적으로 증가시킴.
+    // 전쟁의함성: 시전할 때 필드에 있는 아군 하수인의 공격력을 이번 턴 전투가 끝날 때까지 증가시킴.
     public const int BuffSpellAttackBonus = 3;
 }
