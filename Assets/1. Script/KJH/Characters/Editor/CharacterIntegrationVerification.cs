@@ -59,13 +59,13 @@ public static class CharacterIntegrationVerification
                 {
                     var state = motions[i].animator.GetCurrentAnimatorStateInfo(0);
                     attacks[i] |= state.IsName("Attack");
-                    hits[i] |= state.IsName("Hit");
-                    returned[i] |= hits[i] && state.IsName("Idle");
+                    hits[i] |= IsReactingToHit(motions[i]);
+                    returned[i] |= hits[i] && !motions[i].IsPlaying && state.IsName("Idle");
                 }
                 if (returned.All(x => x))
                 {
                     if (!attacks.All(x => x) || !hits.All(x => x)) throw new Exception("Motion queue skipped a state");
-                    Debug.Log("CHARACTER_RUNTIME_QUEUE_SUCCESS: all 10 Attack -> Hit -> Idle");
+                    Debug.Log("CHARACTER_RUNTIME_QUEUE_SUCCESS: all 10 attack, react to hits, and return to idle");
                     own = MakeSlot(PlayerSide.Me);
                     opponent = MakeSlot(PlayerSide.Opponent);
                     PrepareCombat();
@@ -75,7 +75,7 @@ public static class CharacterIntegrationVerification
             else if (stage == 2 || stage == 4)
             {
                 sawBridgeAttack |= opponent.animator.GetCurrentAnimatorStateInfo(0).IsName("Attack");
-                sawBridgeHit |= own.animator.GetCurrentAnimatorStateInfo(0).IsName("Hit");
+                sawBridgeHit |= IsReactingToHit(own);
                 if (sawBridgeAttack && sawBridgeHit)
                 {
                     if (stage == 4) { Finish(); return; }
@@ -100,6 +100,13 @@ public static class CharacterIntegrationVerification
             EditorApplication.update -= Tick;
             EditorApplication.Exit(1);
         }
+    }
+
+    static bool IsReactingToHit(CharacterMotion motion)
+    {
+        if (motion.hitClip != null) return motion.animator.GetCurrentAnimatorStateInfo(0).IsName("Hit");
+        var facing = motion.transform.Find("Facing");
+        return facing != null && Vector3.Angle(facing.localRotation * Vector3.up, Vector3.up) > 1f;
     }
 
     static CharacterMotion MakeSlot(PlayerSide side)

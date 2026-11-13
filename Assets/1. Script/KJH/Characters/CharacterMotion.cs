@@ -9,8 +9,11 @@ namespace KJH.Characters
         public Animator animator;
         public AnimationClip attackClip;
         public AnimationClip hitClip;
+        [SerializeField] Transform hitRecoil;
         readonly Queue<bool> pending = new Queue<bool>();
         Coroutine playback;
+        Quaternion recoilRestRotation;
+        bool recoiling;
         public bool IsPlaying => playback != null;
         public float AttackDuration => attackClip != null ? attackClip.length : 0.5f;
         public bool IsAttackAnimating => animator != null && animator.isActiveAndEnabled &&
@@ -35,6 +38,11 @@ namespace KJH.Characters
             while (pending.Count > 0)
             {
                 bool hit = pending.Dequeue();
+                if (hit && hitClip == null && hitRecoil != null)
+                {
+                    yield return PlayHitRecoil();
+                    continue;
+                }
                 animator.SetTrigger(hit ? "Hit" : "Attack");
                 var clip = hit ? hitClip : attackClip;
                 yield return new WaitForSeconds((clip != null ? clip.length : 0.5f) + 0.1f);
@@ -42,9 +50,30 @@ namespace KJH.Characters
             playback = null;
         }
 
+        IEnumerator PlayHitRecoil()
+        {
+            const float duration = 0.24f;
+            recoilRestRotation = hitRecoil.localRotation;
+            recoiling = true;
+            for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
+            {
+                float strength = Mathf.Sin(elapsed / duration * Mathf.PI);
+                hitRecoil.localRotation = recoilRestRotation * Quaternion.Euler(-12f * strength, 0f, 0f);
+                yield return null;
+            }
+            ResetRecoil();
+        }
+
+        void ResetRecoil()
+        {
+            if (recoiling && hitRecoil != null) hitRecoil.localRotation = recoilRestRotation;
+            recoiling = false;
+        }
+
         void OnDisable()
         {
             StopAllCoroutines();
+            ResetRecoil();
             playback = null;
             pending.Clear();
         }

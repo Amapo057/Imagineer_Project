@@ -47,7 +47,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::KJH.Characters.CharacterMotion
   animator: {fileID: 7053814065952760399}
   attackClip: {fileID: 7572344613039948371, guid: 0d3056900970a8f4890f4b0fa1456cc1, type: 3}
-  hitClip: {fileID: 4346266593627483699, guid: b57bf1d8f4389da44b364e69ab497604, type: 3}
+  hitClip: {fileID: 0}
+  hitRecoil: {fileID: 8865483708760542547}
 --- !u!1 &6437198805739103917
 GameObject:
   m_ObjectHideFlags: 0
