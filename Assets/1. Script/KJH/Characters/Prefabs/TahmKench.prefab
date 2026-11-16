@@ -24,7 +24,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4125730676030193495}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 1, z: 0, w: -0.00000004371139}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -80,6 +80,7 @@ MonoBehaviour:
   animator: {fileID: 5584010114816506553}
   attackClip: {fileID: 7572344613039948371, guid: 4c4b385612587bc49b31ecea8bca4a31, type: 3}
   hitClip: {fileID: -4781215231662380640, guid: e3ff7d809b61b1f45bb5a6ac1ef86b91, type: 3}
+  hitRecoil: {fileID: 0}
 --- !u!1001 &2023512839151666984
 PrefabInstance:
   m_ObjectHideFlags: 0

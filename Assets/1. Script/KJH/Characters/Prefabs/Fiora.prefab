@@ -48,6 +48,7 @@ MonoBehaviour:
   animator: {fileID: 2402783111596079260}
   attackClip: {fileID: 8114531597553069840, guid: 65858b1b49f03b7419f088cc66a709ce, type: 3}
   hitClip: {fileID: 3047051518604895247, guid: 03bedaac9facb7841b0984c6a5edca9c, type: 3}
+  hitRecoil: {fileID: 0}
 --- !u!1 &7645458574942226369
 GameObject:
   m_ObjectHideFlags: 0
@@ -72,7 +73,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7645458574942226369}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

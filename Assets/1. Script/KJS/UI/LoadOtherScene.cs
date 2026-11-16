@@ -7,20 +7,15 @@ public class LoadOtherScene : MonoBehaviour
     {
         SceneManager.LoadScene("0 KJS_StartScene");
     }
-    public void GoToLobby()
-    {
-        SceneManager.LoadScene("1 KJS_Lobby");
-    }
-
-    public void GoToAnchorInit()
-    {
-        SceneManager.LoadScene("2 KJS_AnchorInit");
-    }
-
     public void GoToMainGame()
     {
-        SceneManager.LoadScene("3 MainGame");
+        SceneManager.LoadScene("1 MainGame");
     }
+    public void GoToViewMode()
+    {
+        SceneManager.LoadScene("2 ViewMode");
+    }
+
 
     public void GoToEnd()
     {

@@ -5,8 +5,8 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
-    path: Assets/0. Scene/MainGame.unity
+  - enabled: 1
+    path: Assets/0. Scene/1 MainGame.unity
     guid: 4790482e33000414481b302db6a3a660
   - enabled: 0
     path: Assets/0. Scene/0 KJS_HandTranparent.unity
@@ -15,15 +15,12 @@ EditorBuildSettings:
     path: Assets/0. Scene/0 KJS_StartScene.unity
     guid: 1276644a731044817ba86362a7482de9
   - enabled: 0
-    path: Assets/0. Scene/1 KJS_Lobby.unity
-    guid: f763314a59bde4ded8fa51d55c82a50c
-  - enabled: 0
     path: Assets/0. Scene/Backup/2 KJS_.unity
     guid: f480ae744444744fc8048867eb74992f
   - enabled: 0
     path: Assets/1. Script/KJS/Network/Production/MainGame_Play.unity
     guid: f1ae41f81ff44204b9fe6650118a17de
-  - enabled: 1
+  - enabled: 0
     path: Assets/0. Scene/ForDisplay.unity
     guid: 7527019d190e64930bd3cf08e1e9c3ab
   m_configObjects:
