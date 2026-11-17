@@ -8,7 +8,7 @@ public class AnchorManager : MonoBehaviour
     public bool IsReady { get; private set; }
 
     // 테이블 테스트하기 편하게 약간 앞으로 밈
-    private Vector3 platePosition = new Vector3(0f, 0f, 0.2f);
+    private Vector3 platePosition = new Vector3(0f, 0f, 0f);
     private Vector3 plateRotation = new Vector3(180f, -90f, -90f);
 
     public void CreateTableAnchor(Vector3 anchorPosition, Quaternion anchorRotation)

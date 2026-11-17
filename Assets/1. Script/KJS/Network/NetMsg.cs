@@ -7,6 +7,8 @@ public static class NetMsg
     public const string Seeking = "SEEKING";       // 아직 호스트/클라이언트를 못 정한 상태로 브로드캐스트
     public const string Host = "HOST";             // 호스트로 정해진 뒤 계속 브로드캐스트(재접속 대비)
     public const string GameStart = "GAME_START";  // 호스트가 선공/후공을 정해서 알려줄 때
+    public const string GameplayReady = "GAMEPLAY_READY";
+    public const string LoadMainGame = "LOAD_MAIN_GAME";
     public const string EndTurn = "END_TURN";      // 턴 종료
     public const string CoinUsed = "COIN_USED";    // 후공 동전 1회 사용
     public const string SpellCast = "SPELL_CAST";  // 마법 사용 (카드ID, 대상 라인 또는 -1)

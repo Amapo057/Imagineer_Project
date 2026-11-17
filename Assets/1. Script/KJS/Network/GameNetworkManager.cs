@@ -32,6 +32,7 @@ public class GameNetworkManager : MonoBehaviour
     }
 
     private volatile bool isHost, connected;
+    private bool waitForGameplayReady, localGameplayReady, peerGameplayReady, gameplayStarted;
     private volatile bool running = true;
     private int generation;
     private bool started;
@@ -51,15 +52,37 @@ public class GameNetworkManager : MonoBehaviour
 
     public bool Connected => connected;
     public bool IsHost => isHost;
+    public bool PeerGameplayReady => !waitForGameplayReady || peerGameplayReady;
     public string StatusText => status;
     public string PeerAddress => peerAddress;
     public string MatchSignature => signature;
     public string LocalAddresses { get; private set; } = "";
     public ConnectionMode Mode => mode;
     public event Action<PlayerSide> OnGameStartReceived;
+    public event Action OnLoadMainGameReceived;
     public event Action OnEndTurnReceived, OnCoinUsedReceived, OnDrawConfirmedReceived, OnRematchReceived, OnDisconnected;
     public event Action<int, int> OnCardPlayedReceived, OnSpellCastReceived;
     public event Action<int, int, int> OnWeaponStrikeReceived;
+    public event Action<bool> OnPeerGameplayReadyChanged;
+
+    public void EnableGameplayReadiness() => waitForGameplayReady = true;
+
+    public void SetGameplayReady(bool ready)
+    {
+        if (!waitForGameplayReady || localGameplayReady == ready) return;
+        localGameplayReady = ready;
+        if (!ready) gameplayStarted = false;
+        if (connected) SendRaw($"{NetMsg.GameplayReady}|{(ready ? 1 : 0)}");
+        TryStartReadyGame();
+    }
+
+    void TryStartReadyGame()
+    {
+        if (!waitForGameplayReady || !connected || !isHost || !localGameplayReady ||
+            !peerGameplayReady || gameplayStarted) return;
+        gameplayStarted = true;
+        ReflipForEpoch(generation);
+    }
 
     void Awake()
     {
@@ -157,6 +180,8 @@ public class GameNetworkManager : MonoBehaviour
     void StopTransport()
     {
         Interlocked.Increment(ref generation);
+        peerGameplayReady = false;
+        gameplayStarted = false;
         lock (sessionLock)
         {
             connected = false; peerAddress = "";
@@ -320,7 +345,9 @@ public class GameNetworkManager : MonoBehaviour
             connected = true; isHost = host; peerAddress = ((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString();
         }
         Queue(id, () => SetStatus(host ? "연결 완료 — 호스트" : "연결 완료 — 클라이언트"));
-        if (host) ReflipForEpoch(id);
+        if (waitForGameplayReady)
+            Queue(id, () => SendRaw($"{NetMsg.GameplayReady}|{(localGameplayReady ? 1 : 0)}"));
+        else if (host) ReflipForEpoch(id);
         receiveThread = Background(() => ReceiveAttempt(connection, id));
     }
 
@@ -368,6 +395,20 @@ public class GameNetworkManager : MonoBehaviour
         {
             case "PING": if (Current(id)) SendRaw("PONG"); break;
             case "PONG": break;
+            case NetMsg.LoadMainGame: Queue(id, () => OnLoadMainGameReceived?.Invoke()); break;
+            case NetMsg.GameplayReady:
+                if (waitForGameplayReady && parts.Length == 2 && (parts[1] == "0" || parts[1] == "1"))
+                {
+                    bool ready = parts[1] == "1";
+                    Queue(id, () =>
+                    {
+                        peerGameplayReady = ready;
+                        if (!ready) gameplayStarted = false;
+                        OnPeerGameplayReadyChanged?.Invoke(ready);
+                        TryStartReadyGame();
+                    });
+                }
+                break;
             case NetMsg.GameStart:
                 if (parts.Length == 2 && (parts[1] == "ME" || parts[1] == "PEER"))
                     Queue(id, () => OnGameStartReceived?.Invoke(parts[1] == "ME" ? PlayerSide.Me : PlayerSide.Opponent));
@@ -408,7 +449,8 @@ public class GameNetworkManager : MonoBehaviour
     }
 
     public bool TrySendEndTurn(PlayerSide localSide, PlayerSide currentTurn) => localSide == currentTurn && SendRaw(NetMsg.EndTurn);
-    public void SendCardPlayed(int cardId, int lane) => SendRaw($"{NetMsg.CardPlayed}|{cardId}|{lane}");
+    public bool SendLoadMainGame() => SendRaw(NetMsg.LoadMainGame);
+    public bool SendCardPlayed(int cardId, int lane) => SendRaw($"{NetMsg.CardPlayed}|{cardId}|{lane}");
     public bool SendWeaponStrike(int source, int lane, int turn) => SendRaw($"{NetMsg.WeaponStrike}|{source}|{lane}|{turn}");
     public void SendCoinUsed() => SendRaw(NetMsg.CoinUsed);
     public void SendSpellCast(int cardId, int lane) => SendRaw($"{NetMsg.SpellCast}|{cardId}|{lane}");

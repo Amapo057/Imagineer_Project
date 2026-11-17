@@ -29,7 +29,7 @@ public class StartInit : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        debug3.text = $"anchorTime: {anchorReadyTime}";
+        if (debug3 != null) debug3.text = $"anchorTime: {anchorReadyTime}";
         if (!isMiddleAnchor)
         {
             if(markerWorldPos.TryGetTargetMarkerResult(middleAnchorId, out var markerPositionResult))

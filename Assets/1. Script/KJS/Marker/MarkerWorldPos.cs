@@ -52,7 +52,7 @@ public class MarkerWorldPos : MonoBehaviour
                 markerPositionResults.Add(new MarkerPositionResult{markerId = result[i].id, cardId = cardId, isBack = isBack, worldPosition = markerWorldPosition, worldRotation = markerWorldRotation});
             }
             // ui에 아이디 출력
-            debugText4.text = idsText;
+            if (debugText4 != null) debugText4.text = idsText;
         }
     }
     private (Vector3 worldPosition, Quaternion worldRotation) LocalToWroldPos(MarkerDetectionResult result)

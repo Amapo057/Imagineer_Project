@@ -73,6 +73,10 @@ public class MarkerDetecter : MonoBehaviour
     System.Collections.IEnumerator Start()
     {
         CameraStatus = "카메라 준비 중 · 기기에서 카메라 권한을 허용하세요.";
+        // 씬 전환 시 중복 패스스루가 제거된 뒤, 유지된 카메라를 사용한다.
+        yield return null;
+        if (passthroughCameraAccess == null)
+            passthroughCameraAccess = FindFirstObjectByType<PassthroughCameraAccess>();
         while (waitForCameraReady && passthroughCameraAccess != null && (!passthroughCameraAccess.IsPlaying || passthroughCameraAccess.CurrentResolution.x <= 0 || passthroughCameraAccess.CurrentResolution.y <= 0))
             yield return null;
         if (passthroughCameraAccess == null)

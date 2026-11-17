@@ -9,6 +9,11 @@ public class LoadOtherScene : MonoBehaviour
     }
     public void GoToMainGame()
     {
+        if (!GameNetworkManager.Instance.SendLoadMainGame())
+        {
+            FindFirstObjectByType<StartNetworkPanel>()?.ShowConnectionRequired();
+            return;
+        }
         SceneManager.LoadScene("1 MainGame");
     }
     public void GoToViewMode()

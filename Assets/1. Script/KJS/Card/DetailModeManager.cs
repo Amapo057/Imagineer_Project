@@ -16,14 +16,7 @@ public class DetailModeManager : MonoBehaviour
 
     void Update()
     {
-        if (!IsDetailMode)
-        {
-            debug2.text = $"Not Detail{detailModeCounte}";
-        }
-        else
-        {
-            debug2.text = "detailMode";
-        }
+        if (debug2 != null) debug2.text = IsDetailMode ? "detailMode" : $"Not Detail{detailModeCounte}";
         // 마커가 새 버전이 없다면 검사하지 않음
         if(lastMarkerVersion == markerWorldPos.MarkerVersion) return;
         // 마커 정보 받고, 거리 측정

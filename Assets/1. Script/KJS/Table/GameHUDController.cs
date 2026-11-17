@@ -27,6 +27,10 @@ public class GameHUDController : MonoBehaviour
     [Header("코스트 / 체력 표시 (왼쪽 아래 / 오른쪽 아래)")]
     [SerializeField] private TextMeshProUGUI costText;
     [SerializeField] private TextMeshProUGUI healthText;
+    [Header("디버그 캔버스")]
+    [SerializeField] private TextMeshProUGUI debugTurn;
+    [SerializeField] private TextMeshProUGUI debugHealth;
+    [SerializeField] private TextMeshProUGUI debugMana;
 
     [Header("로그 창 (오른쪽 위 토글)")]
     [SerializeField] private GameObject logPanel;
@@ -89,6 +93,7 @@ public class GameHUDController : MonoBehaviour
         // 코스트/체력/상대 필드는 카드 내기 등 여러 경로에서 수시로 바뀌고 전용 변경 이벤트가
         // 따로 없어서, DemoTurnController(UpdateTurnText)와 동일하게 매 프레임 폴링해서 갱신함
         UpdateCostHealthText();
+        UpdateDebugText();
         UpdateOpponentFieldText();
         if (pendingResultGame != null && ProductionGameController.Current?.CombatPlaying != true)
         {
@@ -336,7 +341,6 @@ public class GameHUDController : MonoBehaviour
         var board = game.Board.opponent;
         if (laneIndex < 0 || laneIndex >= board.lanes.Length) return;
         if (board.lanes[laneIndex] != null) return; // 이미 차 있으면 중복 메시지로 보고 무시
-        if (VRGameSession.PhysicalHandCount(PlayerSide.Opponent) <= 0) return;
 
         var minion = new CardInstance(data, PlayerSide.Opponent);
         if (!board.TryPlaceOnLane(minion, laneIndex)) return;
@@ -366,7 +370,14 @@ public class GameHUDController : MonoBehaviour
     {
         if (opponentFieldText == null) return;
 
-        var feedback = ProductionGameController.Current?.TableFeedback;
+        var session = ProductionGameController.Current;
+        if (session != null && (!session.Ready || !session.HardwareReady))
+        {
+            opponentFieldText.text = session.ReadinessHint;
+            return;
+        }
+
+        var feedback = session?.TableFeedback;
         var lanes = VRGameSession.Game.Board.opponent.lanes;
         var parts = new string[lanes.Length];
         for (int i = 0; i < lanes.Length; i++)
@@ -439,5 +450,19 @@ public class GameHUDController : MonoBehaviour
             int remainingLives = feedback?.DisplayedHeroHealth(PlayerSide.Me) ?? myBoard.HeroHealth;
             healthText.text = $"체력\n{remainingLives} / {myBoard.maxHeroHealth}";
         }
+    }
+
+    private void UpdateDebugText()
+    {
+        var game = VRGameSession.Game;
+        var session = ProductionGameController.Current;
+        if (debugTurn != null)
+            debugTurn.text = game.IsGameOver ? "게임 종료" :
+                session != null && !session.Ready ? "준비 중" :
+                game.State.CurrentPlayer == PlayerSide.Me ? "내 턴" : "상대 턴";
+        if (debugHealth != null)
+            debugHealth.text = $"체력: {session?.TableFeedback?.DisplayedHeroHealth(PlayerSide.Me) ?? game.Board.me.HeroHealth}";
+        if (debugMana != null)
+            debugMana.text = $"마나: {game.Board.me.currentCost} / {VRGameSession.Coin.DisplayCapacity(PlayerSide.Me)}";
     }
 }

@@ -52,6 +52,11 @@ public sealed class ProductionTableFeedback : MonoBehaviour
     }
     void Add(Transform anchor, PlayerSide side, int index)
     {
+        if (ui == null)
+        {
+            lanes.Add(new Lane { anchor = anchor, side = side, index = index });
+            return;
+        }
         var root = new GameObject("Lane Feedback " + side + " " + index); root.transform.SetParent(transform, false);
         var line = root.AddComponent<LineRenderer>(); line.sharedMaterial = ui.tableMaterial;
         line.useWorldSpace = true; line.loop = true; line.positionCount = 4; line.widthMultiplier = 0.0025f;
@@ -79,6 +84,7 @@ public sealed class ProductionTableFeedback : MonoBehaviour
         BindGame();
         if (!IsPlaying) CancelPlayback();
         else if (playback == null) playback = StartCoroutine(PlayCombat());
+        if (ui == null) return;
         if (!IsPlaying && session.Ready && !game.IsGameOver && lastTurn != game.TurnNumber)
         { lastTurn = game.TurnNumber; ui.ShowFeedback(game.State.CurrentPlayer == PlayerSide.Me ? "내 턴 시작 · 카드를 뽑고 행동하세요" : "상대 턴 · 전투를 지켜보세요"); }
         foreach (var lane in lanes)
@@ -217,12 +223,12 @@ public sealed class ProductionTableFeedback : MonoBehaviour
         if (IsPlaying) strikes[strikes.Count - 1].heroHealth = game.Board.GetBoard(side).HeroHealth;
         else ShowFaceHit(side);
     }
-    void ShowFaceHit(PlayerSide side) => ui.ShowFeedback(side == PlayerSide.Me ? "영웅이 피해를 받았습니다!" : "상대 영웅에게 피해를 입혔습니다!");
-    void Spell(PlayerSide side, CardData card) => ui.ShowFeedback((side == PlayerSide.Me ? "나 · " : "상대 · ") + card.cardName + " 사용");
+    void ShowFaceHit(PlayerSide side) => ui?.ShowFeedback(side == PlayerSide.Me ? "영웅이 피해를 받았습니다!" : "상대 영웅에게 피해를 입혔습니다!");
+    void Spell(PlayerSide side, CardData card) => ui?.ShowFeedback((side == PlayerSide.Me ? "나 · " : "상대 · ") + card.cardName + " 사용");
     void End(PlayerSide? winner)
     {
         if (IsPlaying) { combatWinner = winner; return; }
-        ui.ShowFeedback(winner == null ? "무승부입니다." : winner == PlayerSide.Me ? "승리했습니다!" : "패배했습니다. 다음 판에 다시 도전하세요.");
+        ui?.ShowFeedback(winner == null ? "무승부입니다." : winner == PlayerSide.Me ? "승리했습니다!" : "패배했습니다. 다음 판에 다시 도전하세요.");
     }
     void Unbind()
     {

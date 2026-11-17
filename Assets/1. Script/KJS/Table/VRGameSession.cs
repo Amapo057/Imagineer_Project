@@ -89,7 +89,7 @@ public static class VRGameSession
     public static bool TryCastPhysicalSpell(CardData card, PlayerSide side, int lane = -1)
     {
         var game = Game;
-        if (card == null || PhysicalHandCount(side) <= 0 || usedPhysicalSpells.Contains((int)side * 100 + card.cardId)) return false;
+        if (card == null || usedPhysicalSpells.Contains((int)side * 100 + card.cardId)) return false;
         if (!game.TryCastSpell(card, side, lane, consumeHand: false,
             onConsumed: () => ConsumePhysicalCard(side))) return false;
         usedPhysicalSpells.Add((int)side * 100 + card.cardId);

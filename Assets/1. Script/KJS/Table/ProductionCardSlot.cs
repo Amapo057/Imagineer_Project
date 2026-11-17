@@ -17,7 +17,10 @@ public sealed class ProductionCardSlot : MonoBehaviour
     void Update()
     {
         if (previous != session.Game)
-        { previous = session.Game; candidate = -1; blockedUntilRemoved = true; }
+        {
+            if (previous != null && candidate >= 0) blockedUntilRemoved = true;
+            previous = session.Game;
+        }
         var card = session.TableFeedback != null
             ? session.TableFeedback.DisplayedCard(PlayerSide.Me, lane) : session.Game.Board.me.lanes[lane];
         if (displayed == card) return;

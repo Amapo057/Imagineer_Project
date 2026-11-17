@@ -18,6 +18,8 @@ public class CardSlotRisingEnergy : MonoBehaviour
     {
         var lanes = VRGameSession.Game.Board.GetBoard(side).lanes;
         var card = lane >= 0 && lane < lanes.Length ? lanes[lane] : null;
+        var feedback = ProductionGameController.Current?.TableFeedback;
+        if (feedback != null) card = feedback.DisplayedCard(side, lane);
         bool active = card != null;
         if (energyWall.activeSelf != active) energyWall.SetActive(active);
         SetVisible(attackText ? attackText.gameObject : null, active);
@@ -27,8 +29,10 @@ public class CardSlotRisingEnergy : MonoBehaviour
         if (active && !wasActive && statsAnimator) statsAnimator.Play("CardSlot_StatsReveal", 0, 0f);
         wasActive = active;
         if (!active) return;
-        if (attackText) attackText.SetText("{0}", card.currentAttack);
-        if (healthText) healthText.SetText("{0}", card.currentHealth);
+        int attack = card.currentAttack, health = card.currentHealth;
+        feedback?.DisplayedStats(side, lane, card, out attack, out health);
+        if (attackText) attackText.SetText("{0}", attack);
+        if (healthText) healthText.SetText("{0}", health);
     }
 
     private static void SetVisible(GameObject target, bool visible)
