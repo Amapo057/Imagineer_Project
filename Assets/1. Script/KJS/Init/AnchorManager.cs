@@ -11,6 +11,8 @@ public class AnchorManager : MonoBehaviour
     private Vector3 platePosition = new Vector3(0f, 0f, 0f);
     private Vector3 plateRotation = new Vector3(180f, -90f, -90f);
 
+    public void SetFieldVisible(bool visible) => fieldRoot.SetActive(visible);
+
     public void CreateTableAnchor(Vector3 anchorPosition, Quaternion anchorRotation)
     {
         // 앵커용 빈 오브젝트 생성

@@ -1,96 +1,144 @@
+using TMPro;
 using UnityEngine;
-using System.Collections.Generic;
 
 public class DetailModeManager : MonoBehaviour
 {
-    // 마커 정보 받기위해 코드 연결
     [SerializeField] private MarkerWorldPos markerWorldPos;
-    [SerializeField] private TMPro.TextMeshProUGUI debug2;
-    // 코드로부터 받아 저장할 변수 선언
-    private uint lastMarkerVersion = 0;
-    public int LastMarkerId{get; private set;} = 0;
-    public bool IsDetailMode{get; private set;} = false;
-    private float detailModeRange = 0.2f;
-    private int detailModeCounte = 0;
+    [SerializeField] private TMP_Text debug2;
+    [SerializeField] private GameObject detailPrefab;
+    [SerializeField] private CardDatabase cardDatabase;
+    [SerializeField] private CardArtwork[] artworkByCard;
 
-
-    void Update()
+    [System.Serializable]
+    private struct CardArtwork
     {
-        if (debug2 != null) debug2.text = IsDetailMode ? "detailMode" : $"Not Detail{detailModeCounte}";
-        // 마커가 새 버전이 없다면 검사하지 않음
-        if(lastMarkerVersion == markerWorldPos.MarkerVersion) return;
-        // 마커 정보 받고, 거리 측정
-        if(markerWorldPos.TryGetMarkerResult(out var markerResult))
-        {
-            lastMarkerVersion = markerWorldPos.MarkerVersion;
-            int nearestMarkerId = -1;
-            // 더 작은 거리를 찾아야하니 최대값으로 초기화
-            float nearestDistance = float.MaxValue;
-            Vector3 cameraPosition = markerWorldPos.CameraPosition;
-
-            foreach(var marker in markerResult)
-            {
-                // 0번 마커 무시
-                if(marker.markerId == 0) continue;
-                // 카메라와 마커 거리 측정 후 이전보다 더 가까우면 id와 거리 기록
-                float distance = Vector3.Distance(cameraPosition, marker.worldPosition);
-                if (distance < nearestDistance)
-                {
-                    nearestDistance = distance;
-                    nearestMarkerId = marker.markerId;
-                }
-
-            }
-            // 마커 id가 관측되지 않은 기본값이거나, 범위내에 없다면 인식 초기화
-            if(nearestMarkerId == -1 || !IsMarkerInRange(nearestDistance))
-            {
-                LastMarkerId = -1;
-                detailModeCounte = 0;
-                IsDetailMode = false;
-                return;
-            }
-            // 이전과 가장 가까운 마커 id가 같다면 카운트 상승
-            if(LastMarkerId == nearestMarkerId)
-            {
-                if (!IsDetailMode)
-                {
-                    detailModeCounte++;
-                }
-            }
-            // 가장 가까운 마커가 다르다면 id를 해당 마커로 기록 및 카운트 초기화와 디테일모드 종료
-            else
-            {
-                LastMarkerId = nearestMarkerId;
-                detailModeCounte = 1;
-                IsDetailMode = false;
-            }
-            if(detailModeCounte >= 4 && !IsDetailMode)
-            {
-                IsDetailMode = true;
-            }
-        }
+        public Sprite illustration;
+        public Sprite frontMarker;
     }
 
-    private bool IsMarkerInRange(float distance)
+    private const float DetailRange = 0.3f;
+    // The tracked ArUco plane points toward the camera and is a quarter turn from the card UI.
+    private static readonly Quaternion MarkerToCard =
+        Quaternion.AngleAxis(90f, Vector3.forward) * Quaternion.AngleAxis(180f, Vector3.right);
+    private const int RequiredFrames = 4;
+    private const float DescriptionFadeTime = 0.2f;
+    private uint lastFrameVersion;
+    private int candidateId = -1;
+    private int consecutiveFrames;
+    private float phaseStart;
+    private float phaseDuration;
+    private GameObject detailView;
+    private UnityEngine.UI.RectMask2D revealMask;
+    private CanvasGroup descriptionFade;
+    private Transform displayedAnchor;
+    private int displayedCardId = -1;
+
+    public bool IsDetailMode => consecutiveFrames == RequiredFrames;
+    public int DetailCardId { get; private set; } = -1;
+
+    private void Update()
     {
-        // 자세히보기 상태가 아닐경우 범위 측정
-        if (!IsDetailMode)
+        if (markerWorldPos == null || lastFrameVersion == markerWorldPos.FrameVersion) return;
+        lastFrameVersion = markerWorldPos.FrameVersion;
+
+        int nearestCard = -1;
+        float nearestDistance = DetailRange * DetailRange;
+        foreach (var marker in markerWorldPos.FrameMarkers)
         {
-            if(distance <= detailModeRange)
-            {
-                return true;
-            }
-            return false;
+            if (marker.cardId <= 0 || (cardDatabase != null && cardDatabase.GetCardById(marker.cardId) == null)) continue;
+            float distance = (marker.worldPosition - markerWorldPos.CameraPosition).sqrMagnitude;
+            if (distance > nearestDistance) continue;
+            nearestDistance = distance;
+            nearestCard = marker.cardId;
         }
-        // 자세히보기 모드 진입시 인식 범위 증가
-        else
+
+        UpdateCandidate(nearestCard);
+        if (debug2 != null) debug2.text = IsDetailMode ? "detailMode" : $"Not Detail{consecutiveFrames}";
+    }
+
+    private void UpdateCandidate(int cardId)
+    {
+        if (cardId != candidateId || cardId <= 0)
         {
-            if(distance <= detailModeRange)
-            {
-                return true;
-            }
-            return false;
+            candidateId = cardId;
+            consecutiveFrames = cardId > 0 ? 1 : 0;
+            phaseStart = Time.unscaledTime;
         }
-        
+        else if (consecutiveFrames < RequiredFrames)
+        {
+            phaseDuration = Mathf.Clamp(Time.unscaledTime - phaseStart, 0.04f, 0.5f);
+            phaseStart = Time.unscaledTime;
+            consecutiveFrames++;
+        }
+        DetailCardId = consecutiveFrames >= 2 ? cardId : -1;
+    }
+
+    public void ShowDetailOn(Transform anchor)
+    {
+        int cardId = DetailCardId;
+        if (anchor == null || cardId <= 0 || detailPrefab == null || cardDatabase == null ||
+            artworkByCard == null || cardId > artworkByCard.Length)
+        {
+            if (detailView != null) detailView.SetActive(false);
+            displayedAnchor = null;
+            displayedCardId = -1;
+            return;
+        }
+        if (detailView != null && displayedAnchor == anchor && displayedCardId == cardId)
+        {
+            UpdateReveal();
+            return;
+        }
+
+        var card = cardDatabase.GetCardById(cardId);
+        if (card == null) return;
+        if (detailView == null)
+        {
+            detailView = Instantiate(detailPrefab, anchor, false);
+            revealMask = detailView.transform.Find("Canvas").gameObject.AddComponent<UnityEngine.UI.RectMask2D>();
+            descriptionFade = detailView.transform.Find("Explane").gameObject.AddComponent<CanvasGroup>();
+            descriptionFade.blocksRaycasts = false;
+        }
+        else detailView.transform.SetParent(anchor, false);
+
+        var canvas = detailView.transform.Find("Canvas");
+        var illustration = canvas.Find("Illust").GetComponent<UnityEngine.UI.Image>();
+        var marker = canvas.Find("Marker").GetComponent<UnityEngine.UI.Image>();
+        var artwork = artworkByCard[cardId - 1];
+        illustration.sprite = artwork.illustration;
+        marker.sprite = artwork.frontMarker;
+        bool unit = card.cardType == CardType.Unit;
+        canvas.Find("AT").GetComponent<TMP_Text>().text = unit ? card.attack.ToString() : "";
+        canvas.Find("HP").GetComponent<TMP_Text>().text = unit ? card.health.ToString() : "";
+        canvas.Find("MN").GetComponent<TMP_Text>().text = card.CostAsRoman;
+        descriptionFade.GetComponentInChildren<TMP_Text>(true).text = card.description;
+
+        // Use the card's front-facing basis before registering the marker centers.
+        detailView.transform.localRotation = MarkerToCard * detailPrefab.transform.localRotation;
+        detailView.transform.position += anchor.position - marker.rectTransform.position - detailView.transform.forward * 0.002f;
+        UpdateReveal();
+        detailView.SetActive(true);
+        displayedAnchor = anchor;
+        displayedCardId = cardId;
+    }
+
+    private void UpdateReveal()
+    {
+        float elapsed = Time.unscaledTime - phaseStart;
+        float fraction = IsDetailMode ? 1f : Mathf.Min(0.99f,
+            (consecutiveFrames - 2 + Mathf.Clamp01(elapsed / phaseDuration)) * 0.5f);
+        revealMask.padding = new Vector4(0f, 0f, 0f, revealMask.rectTransform.rect.height * (1f - fraction));
+        descriptionFade.alpha = IsDetailMode ? Mathf.Clamp01(elapsed / DescriptionFadeTime) : 0f;
+    }
+
+    private void OnDisable()
+    {
+        UpdateCandidate(-1);
+        ShowDetailOn(null);
+    }
+
+    private void OnDestroy()
+    {
+        if (detailView != null) Destroy(detailView);
     }
 }

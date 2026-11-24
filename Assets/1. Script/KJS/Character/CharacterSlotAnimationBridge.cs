@@ -33,7 +33,8 @@ namespace KJH.Characters
         void OnHit(PlayerSide player, int lane)
         {
             if (subscribed.State.CurrentPhase == TurnPhase.Combat &&
-                ProductionGameController.Current?.TableFeedback?.HandlesCombat(subscribed) == true) return;
+                (player == subscribed.State.CurrentPlayer ||
+                 ProductionGameController.Current?.TableFeedback?.HandlesCombat(subscribed) == true)) return;
             if (player == side && lane == laneIndex)
                 GetComponentInChildren<CharacterMotion>()?.Hit();
         }

@@ -43,97 +43,59 @@ public class TrackingMarker : MonoBehaviour
 
     void Update()
     {
-        // 목표 id와 일치하는 마커를 찾아 저장
-        if(markerWorldPos.TryGetTargetCardResult(TargetCardId, out var targetMarker))
-        {
-            worldPosition = targetMarker.worldPosition;
-            worldRotation = targetMarker.worldRotation;
-            // 자세히 보기 모드일때 보간 사용
-            if (detailModeManager.IsDetailMode && detailModeManager.LastMarkerId == TargetCardId)
-            {
-                // 손 속도를 활용해 보간값으로 활용
-                float followSpeed = GetCardFollowSpeed(handManager.GetHandSpeed());
-                // 손이 이동중이면 속도 기록
-                if (isHandMove)
-                {
-                    isCardMove = true;
-                    maxSpeed = Mathf.Max(maxSpeed, followSpeed);
-                }
-                // 현재 카드와 앵커의 거리와 각도를 비교해 기준이상 차이이면 이전의 최대속도로 이동
-                float cardToMarkerDistance = Vector3.Distance(transform.position, worldPosition);
-                float cardToMarkerAngle = Quaternion.Angle(transform.rotation, worldRotation);
-                if(isCardMove && !isHandMove)
-                {
-                    if (cardToMarkerDistance > 0.01f || cardToMarkerAngle > 7f)
-                    {
-                        followSpeed = maxSpeed;
-                    }
-                    else
-                    {
-                        isCardMove = false;
-                        maxSpeed = 0f;
-                    }
-                }
-                // 적용한 속도를 사용해 보간에 사용할 값으로 변환
-                float t = 1f - Mathf.Exp(-followSpeed * Time.deltaTime);
+        if (!markerWorldPos.TryGetTargetCardResult(TargetCardId, out var targetMarker)) return;
+        worldPosition = targetMarker.worldPosition;
+        worldRotation = targetMarker.worldRotation;
+        if (detailModeManager != null && detailModeManager.DetailCardId == TargetCardId)
+            FollowDetailPose(Time.deltaTime);
+        else
+            ResetPose(worldPosition, worldRotation);
+    }
 
-                // 이동 여부 판정 함수로 이동여부 bool 받기
-                var (applyPosition, applyRotation) = DeadZoneLimit();
-                if (applyPosition)
-                {
-                    // 보간으로 부드럽게 움직이도록 구성
-                    transform.position = Vector3.Lerp(transform.position, worldPosition, t);
-                }
-                if (applyRotation)
-                {
-                    transform.rotation = Quaternion.Slerp(transform.rotation, worldRotation, t);
-                }
+    private void FollowDetailPose(float deltaTime)
+    {
+        UpdateFollowTarget();
+        float followSpeed = GetCardFollowSpeed(handManager.GetHandSpeed());
+        if (isHandMove)
+        {
+            isCardMove = true;
+            maxSpeed = Mathf.Max(maxSpeed, followSpeed);
+        }
+        else if (isCardMove)
+        {
+            if (Vector3.Distance(transform.position, deadZonePosition) > 0.01f ||
+                Quaternion.Angle(transform.rotation, deadZoneRotation) > 7f)
+            {
+                followSpeed = maxSpeed;
             }
-            // 일반 상태일신 보간없이 바로 이동
             else
             {
-                transform.position = worldPosition;
-                transform.rotation = worldRotation;
+                isCardMove = false;
+                maxSpeed = 0f;
             }
         }
+
+        // Continue following the accepted pose between camera detections.
+        float t = 1f - Mathf.Exp(-followSpeed * deltaTime);
+        transform.SetPositionAndRotation(Vector3.Lerp(transform.position, deadZonePosition, t),
+            Quaternion.Slerp(transform.rotation, deadZoneRotation, t));
     }
-    private (bool applyPosition, bool applyRotation) DeadZoneLimit()
+
+    private void UpdateFollowTarget()
     {
-        bool applyPosition = true;
-        bool applyRotation = true;
-        // 데드존 기준 위치 초기화
         if (!poseInitialized)
         {
             deadZonePosition = worldPosition;
             deadZoneRotation = worldRotation;
             poseInitialized = true;
+            return;
         }
-        else
-        {
-            // 이전 측정 마커와 현제 위치 비교
-            float positionDelta = Vector3.Distance(deadZonePosition, worldPosition);
-            float rotationDelta = Quaternion.Angle(deadZoneRotation, worldRotation);
 
-            // 데드존 기준값과 비교 후 작을시 이동하지 않음
-            if (positionDelta <= positionDeadZone)
-            {
-                applyPosition = false;
-            }
-            else
-            {
-                deadZonePosition = worldPosition;
-            }
-
-            if (rotationDelta <= rotationDeadZone || rotationDelta >= 150)
-            {
-                applyRotation = false;
-            }
-            else
-            {
-                deadZoneRotation = worldRotation;
-            }
-        }
-        return (applyPosition, applyRotation);
+        if (Vector3.Distance(deadZonePosition, worldPosition) > positionDeadZone)
+            deadZonePosition = worldPosition;
+        float angle = Quaternion.Angle(deadZoneRotation, worldRotation);
+        if (angle > rotationDeadZone && angle < 150f)
+            deadZoneRotation = worldRotation;
     }
 
     private float GetCardFollowSpeed(float handSpeed)
@@ -158,6 +120,18 @@ public class TrackingMarker : MonoBehaviour
         this.markerWorldPos = markerWorldPos;
         this.detailModeManager = detailModeManager;
     }
+
+    public void ResetPose(Vector3 position, Quaternion rotation)
+    {
+        worldPosition = position;
+        worldRotation = rotation;
+        poseInitialized = false;
+        isHandMove = false;
+        isCardMove = false;
+        maxSpeed = 0f;
+        transform.SetPositionAndRotation(position, rotation);
+    }
+
     public void SetisDetaile(bool detaileMode)
     {
         isDetaile = detaileMode;

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Keep canonical lane X coordinates identical on both peers; only swap the local half.
+// Swap sides across the table while keeping card lanes aligned between players.
 public sealed class ProductionSeating : MonoBehaviour
 {
     public Transform field;
@@ -9,6 +9,10 @@ public sealed class ProductionSeating : MonoBehaviour
     public MarkerWorldPos marker;
     public Transform[] localObjects;
     public Transform[] remoteObjects;
+    [SerializeField] private Transform localDeck;
+    [SerializeField] private Transform opponentDeck;
+    [SerializeField] private Transform localMana;
+    [SerializeField] private Transform opponentMana;
     public bool IsReady { get; private set; }
     public bool PositiveSide { get; private set; }
     public static Vector3 SeatPosition(Vector3 position, bool positive) => positive ? new Vector3(position.x, position.y, -position.z) : position;
@@ -18,15 +22,21 @@ public sealed class ProductionSeating : MonoBehaviour
         float z = field.InverseTransformPoint(head.transform.position).z;
         if (Mathf.Abs(z) < 0.05f) return;
         PositiveSide = z > 0;
-        foreach (var item in localObjects) Place(item);
-        foreach (var item in remoteObjects) Place(item);
+        if (PositiveSide)
+        {
+            foreach (var item in localObjects) PlaceOnOppositeSide(item);
+            foreach (var item in remoteObjects) PlaceOnOppositeSide(item);
+        }
         marker.LocalPlayerOnPositiveSide = PositiveSide;
         IsReady = true;
     }
-    void Place(Transform item)
+    void PlaceOnOppositeSide(Transform item)
     {
-        if (!PositiveSide || item == null) return;
-        item.position = field.TransformPoint(SeatPosition(field.InverseTransformPoint(item.position), true));
+        if (item == null) return;
+        var position = SeatPosition(field.InverseTransformPoint(item.position), true);
+        if (item == localDeck || item == opponentDeck || item == localMana || item == opponentMana)
+            position.x = -position.x;
+        item.position = field.TransformPoint(position);
         item.rotation = Quaternion.AngleAxis(180, field.up) * item.rotation;
     }
 }

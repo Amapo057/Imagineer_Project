@@ -13,6 +13,25 @@ public class CardSlotRisingEnergy : MonoBehaviour
     [SerializeField] private Animator statsAnimator;
 
     private bool wasActive;
+    private float defaultStatsHeight;
+
+    private void Awake()
+    {
+        if (statsAnimator != null) defaultStatsHeight = statsAnimator.transform.localPosition.y;
+    }
+
+    public void SetStatsHeight(Transform model)
+    {
+        if (statsAnimator == null) return;
+        var stats = statsAnimator.transform;
+        var position = stats.localPosition;
+        var anchor = model != null ? model.Find("UIAnchor") : null;
+        position.y = defaultStatsHeight;
+        // 원점에 남은 UIAnchor는 아직 높이를 설정하지 않은 상태다.
+        if (anchor != null && !Mathf.Approximately(anchor.localPosition.y, 0f))
+            position.y = stats.parent.InverseTransformPoint(anchor.position).y;
+        stats.localPosition = position;
+    }
 
     private void Update()
     {

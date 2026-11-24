@@ -19,6 +19,7 @@ public sealed class ProductionTableFeedback : MonoBehaviour
         public Color pulse;
         public CardInstance combatCard;
         public int combatAttack, combatHealth;
+        public CardInstance weaponDefeat;
     }
     sealed class Strike
     {
@@ -38,6 +39,7 @@ public sealed class ProductionTableFeedback : MonoBehaviour
     readonly Color mine = new Color(0.15f, 0.85f, 0.82f), enemy = new Color(1f, 0.57f, 0.25f);
     public int LaneCount => lanes.Count;
     public bool IsPlaying => strikes.Count > 0 && HandlesCombat(game);
+    internal event System.Action<PlayerSide> HeroHitShown;
     internal bool HandlesCombat(GameManager target) =>
         Application.isPlaying && isActiveAndEnabled && session != null && session.Ready &&
         session.HardwareReady && game == target && target == session.Game;
@@ -76,7 +78,7 @@ public sealed class ProductionTableFeedback : MonoBehaviour
         lastTurn = -1;
         game.OnMinionAttacked += Attack; game.OnMinionHit += Hit; game.OnFaceHit += FaceHit;
         game.OnSpellCast += Spell; game.OnGameOver += End;
-        foreach (var lane in lanes) { lane.card = null; lane.pulseUntil = 0; }
+        foreach (var lane in lanes) { lane.card = null; lane.pulseUntil = 0; lane.weaponDefeat = null; }
     }
     void LateUpdate()
     {
@@ -92,7 +94,7 @@ public sealed class ProductionTableFeedback : MonoBehaviour
             bool visible = session.Ready && session.HardwareReady;
             lane.outline.enabled = visible; lane.label.gameObject.SetActive(visible);
             if (!visible || lane.anchor == null) continue;
-            var card = IsPlaying ? lane.combatCard : game.Board.GetBoard(lane.side).lanes[lane.index];
+            var card = DisplayedCard(lane.side, lane.index);
             if (card != lane.card)
             {
                 if (card != null) Pulse(lane, new Color(0.95f, 0.84f, 0.38f));
@@ -114,22 +116,29 @@ public sealed class ProductionTableFeedback : MonoBehaviour
             lane.label.transform.position = center + t.up * 0.06f - t.forward * 0.10f;
             lane.label.transform.rotation = ui.viewCamera.transform.rotation;
             string owner = lane.side == PlayerSide.Me ? "내" : "상대";
-            lane.label.text = card == null ? owner + " 필드 " + (lane.index + 1) + "\n빈 칸" :
-                card.data.cardName + "\n공격 " + (IsPlaying ? lane.combatAttack : card.currentAttack) +
-                "   체력 " + (IsPlaying ? lane.combatHealth : card.currentHealth);
+            if (card == null) lane.label.text = owner + " 필드 " + (lane.index + 1) + "\n빈 칸";
+            else
+            {
+                DisplayedStats(lane.side, lane.index, card, out int attack, out int health);
+                lane.label.text = card.data.cardName + "\n공격 " + attack + "   체력 " + health;
+            }
         }
     }
     void Pulse(Lane lane, Color color) { lane.pulse = color; lane.pulseUntil = Time.unscaledTime + 0.65f; }
     Lane FindLane(PlayerSide side, int index) => lanes.Find(lane => lane.side == side && lane.index == index);
-    internal CardInstance DisplayedCard(PlayerSide side, int index) =>
-        IsPlaying ? FindLane(side, index)?.combatCard : session.Game.Board.GetBoard(side).lanes[index];
+    internal CardInstance DisplayedCard(PlayerSide side, int index)
+    {
+        var current = session.Game;
+        var card = IsPlaying ? FindLane(side, index)?.combatCard : current.Board.GetBoard(side).lanes[index];
+        return card ?? (game == current ? FindLane(side, index)?.weaponDefeat : null);
+    }
     internal int DisplayedHeroHealth(PlayerSide side) =>
         IsPlaying ? heroHealth[(int)side] : session.Game.Board.GetBoard(side).HeroHealth;
     internal void DisplayedStats(PlayerSide side, int index, CardInstance card, out int attack, out int health)
     {
         var lane = IsPlaying ? FindLane(side, index) : null;
         attack = lane != null && lane.combatCard == card ? lane.combatAttack : card.currentAttack;
-        health = lane != null && lane.combatCard == card ? lane.combatHealth : card.currentHealth;
+        health = lane != null && lane.combatCard == card ? lane.combatHealth : Mathf.Max(0, card.currentHealth);
     }
     void Attack(PlayerSide side, int index)
     {
@@ -191,7 +200,6 @@ public sealed class ProductionTableFeedback : MonoBehaviour
             }
             if (attack == null) yield return new WaitForSeconds(0.10f);
             while (attack != null && (attack.IsPlaying || attack.IsAttackAnimating)) yield return null;
-            if (strike.attackerHealth > 0) attack?.Hit();
             if (strike.attackerHealth <= 0) strike.attacker.combatCard = null;
             if (strike.defenderHealth <= 0) strike.defender.combatCard = null;
         }
@@ -212,18 +220,40 @@ public sealed class ProductionTableFeedback : MonoBehaviour
         playback = null;
         strikes.Clear();
     }
-    public void WeaponImpact(PlayerSide side, int index)
+    public void WeaponImpact(PlayerSide side, int index, CardInstance target)
     {
-        Hit(side, index);
-        foreach (var slot in FindObjectsByType<KJH.Characters.CharacterSlotAnimationBridge>(FindObjectsSortMode.None))
-            if (slot.side == side && slot.laneIndex == index) slot.GetComponentInChildren<KJH.Characters.CharacterMotion>()?.Hit();
+        if (!Application.isPlaying || !isActiveAndEnabled) return;
+        BindGame();
+        var lane = FindLane(side, index);
+        if (lane == null) return;
+        Pulse(lane, new Color(1f, 0.22f, 0.22f));
+
+        // Damage has already been applied. Keep only the defeated card's presentation.
+        if (!target.IsAlive) lane.weaponDefeat = target;
+        StartCoroutine(PlayWeaponHit(lane, target));
+    }
+    IEnumerator PlayWeaponHit(Lane lane, CardInstance target)
+    {
+        yield return null;
+        if (isActiveAndEnabled && DisplayedCard(lane.side, lane.index) == target)
+        {
+            var motion = lane.anchor.GetComponentInChildren<CharacterMotion>();
+            motion?.Hit();
+            while (lane.weaponDefeat == target && motion != null && motion.IsPlaying &&
+                DisplayedCard(lane.side, lane.index) == target) yield return null;
+        }
+        if (lane.weaponDefeat == target) lane.weaponDefeat = null;
     }
     void FaceHit(PlayerSide side)
     {
         if (IsPlaying) strikes[strikes.Count - 1].heroHealth = game.Board.GetBoard(side).HeroHealth;
         else ShowFaceHit(side);
     }
-    void ShowFaceHit(PlayerSide side) => ui?.ShowFeedback(side == PlayerSide.Me ? "영웅이 피해를 받았습니다!" : "상대 영웅에게 피해를 입혔습니다!");
+    void ShowFaceHit(PlayerSide side)
+    {
+        HeroHitShown?.Invoke(side);
+        ui?.ShowFeedback(side == PlayerSide.Me ? "영웅이 피해를 받았습니다!" : "상대 영웅에게 피해를 입혔습니다!");
+    }
     void Spell(PlayerSide side, CardData card) => ui?.ShowFeedback((side == PlayerSide.Me ? "나 · " : "상대 · ") + card.cardName + " 사용");
     void End(PlayerSide? winner)
     {
@@ -236,6 +266,10 @@ public sealed class ProductionTableFeedback : MonoBehaviour
         game.OnMinionAttacked -= Attack; game.OnMinionHit -= Hit; game.OnFaceHit -= FaceHit;
         game.OnSpellCast -= Spell; game.OnGameOver -= End;
     }
-    void OnDisable() => CancelPlayback();
+    void OnDisable()
+    {
+        CancelPlayback();
+        foreach (var lane in lanes) lane.weaponDefeat = null;
+    }
     void OnDestroy() => Unbind();
 }

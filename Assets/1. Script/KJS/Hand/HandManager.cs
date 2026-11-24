@@ -1,116 +1,60 @@
-using System;
-using TMPro;
 using UnityEngine;
 
 public class HandManager : MonoBehaviour
 {
     [SerializeField] private OVRSkeleton handSkeleton;
 
-    // 엄지끝 정보용 변수
-    private Transform thumbTip = null;
-    // 속도 측정용 이전 엄지 위치
+    private Transform thumbTip;
+    private Transform wrist;
     private Vector3 previousThumbPosition;
-    // 엄지 이전 위치값 초기화 여부
-    private bool thumbInitialized = false;
-    // 엄지 속도
-    private float thumbSpeed;
-
-    // 손목용 변수
-    private Transform wrist = null;
     private Vector3 previousWristPosition;
-    private bool wristInitialized = false;
+    private bool hasPreviousSample;
+    private float thumbSpeed;
     private float wristSpeed;
+    private const float SmoothingSpeed = 23f;
 
-    // 보간용 변수
-    // 약 0.1초에 90% 반영하도록 설정
-    float smoothingSpeed = 23f;
-
-    void Update()
+    private void Update()
     {
-        if (thumbTip == null)
+        if (handSkeleton == null || !handSkeleton.IsInitialized || !handSkeleton.IsDataValid)
         {
-            FindThumbTip();
+            hasPreviousSample = false;
+            thumbSpeed = wristSpeed = 0f;
             return;
         }
-        if (wrist == null)
-        {
-            Findwrist();
-            return;
-        }
-
-        // 현재 엄지 위치값 받아오기
-        Vector3 currentThumbPosition = thumbTip.position;
-        Vector3 currentWristPosition = wrist.position;
-
-        // 이전 엄지 위치값 맨처음 초기화
-        if (!thumbInitialized)
-        {
-            previousThumbPosition = currentThumbPosition;
-            thumbInitialized = true;
-            return;
-        }
-        if (!wristInitialized)
-        {
-            previousWristPosition = currentWristPosition;
-            wristInitialized = true;
-            return;
-        }
-
-        // 1 - e^(-23 * 0.1) = 약 0.9
-        float t = 1f - Mathf.Exp(-smoothingSpeed * Time.deltaTime);
-
-        // 엄지 속도 계산
-        // deltaTime사용해 프레임 상관없이 작동하도록 구성
-        // 대략 m/s단위
-        float thumbMeasuredSpeed = Vector3.Distance(previousThumbPosition, currentThumbPosition) / Time.deltaTime;
-        thumbSpeed = Mathf.Lerp(thumbSpeed, thumbMeasuredSpeed, t);
-
-        float wristMeasuredSpeed = Vector3.Distance(previousWristPosition, currentWristPosition) / Time.deltaTime;
-        wristSpeed = Mathf.Lerp(wristSpeed, wristMeasuredSpeed, t);
-
-        // debug4.text = $"Thumb Speed: {thumbSpeed}\nWrist Speed: {wristSpeed}";
-
-        // 이전 위치 적용
-        previousThumbPosition = currentThumbPosition;
-        previousWristPosition = currentWristPosition;
+        if ((thumbTip == null || wrist == null) && !BindHandJoints()) return;
+        SampleHandSpeed(Time.deltaTime);
     }
 
-    // 엄지끝 탐색 후 전역변수에 할당
-    private void FindThumbTip()
+    private bool BindHandJoints()
     {
-        // 멀쩡한지 확인
-        if(handSkeleton == null || !handSkeleton.IsInitialized) return;
-
-        // 뼈 내부 탐색 후 찾으면 위치 할당
-        foreach(var bone in handSkeleton.Bones)
+        var skeletonType = handSkeleton.GetSkeletonType();
+        bool openXR = skeletonType == OVRSkeleton.SkeletonType.XRHandLeft ||
+                      skeletonType == OVRSkeleton.SkeletonType.XRHandRight;
+        var thumbId = openXR ? OVRSkeleton.BoneId.XRHand_ThumbTip : OVRSkeleton.BoneId.Hand_ThumbTip;
+        var wristId = openXR ? OVRSkeleton.BoneId.XRHand_Wrist : OVRSkeleton.BoneId.Hand_WristRoot;
+        foreach (var bone in handSkeleton.Bones)
         {
-            if(bone.Id == OVRSkeleton.BoneId.Hand_ThumbTip)
-            {
-                thumbTip = bone.Transform;
-                break;
-            }
+            if (bone.Id == thumbId) thumbTip = bone.Transform;
+            if (bone.Id == wristId) wrist = bone.Transform;
         }
+        return thumbTip != null && wrist != null;
     }
 
-    private void Findwrist()
+    private void SampleHandSpeed(float deltaTime)
     {
-        // 멀쩡한지 확인
-        if(handSkeleton == null || !handSkeleton.IsInitialized) return;
-
-        // 뼈 내부 탐색 후 찾으면 위치 할당
-        foreach(var bone in handSkeleton.Bones)
+        if (deltaTime <= 0f) return;
+        Vector3 thumbPosition = thumbTip.position;
+        Vector3 wristPosition = wrist.position;
+        if (hasPreviousSample)
         {
-            if(bone.Id == OVRSkeleton.BoneId.Hand_WristRoot)
-            {
-                wrist = bone.Transform;
-                break;
-            }
+            float t = 1f - Mathf.Exp(-SmoothingSpeed * deltaTime);
+            thumbSpeed = Mathf.Lerp(thumbSpeed, Vector3.Distance(previousThumbPosition, thumbPosition) / deltaTime, t);
+            wristSpeed = Mathf.Lerp(wristSpeed, Vector3.Distance(previousWristPosition, wristPosition) / deltaTime, t);
         }
+        previousThumbPosition = thumbPosition;
+        previousWristPosition = wristPosition;
+        hasPreviousSample = true;
     }
 
-    public float GetHandSpeed()
-    {
-        // 둘중 더 큰것 반환
-        return  Mathf.Max(thumbSpeed, wristSpeed);
-    }
+    public float GetHandSpeed() => Mathf.Max(thumbSpeed, wristSpeed);
 }

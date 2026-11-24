@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 
 // Match-local, one-use battlecry charges; damage is derived locally, never trusted from the wire.
 public sealed class ProductionWeaponState
@@ -19,7 +18,6 @@ public sealed class ProductionWeaponState
     {
         Sync(current);
         if (game.IsGameOver || game.State.CurrentPlayer != side || !card.HasKeyword(CardKeyword.Weapon) || !armed[(int)side].Add(card.cardId)) return;
-        if (!game.Board.GetOpponentBoard(side).lanes.Any(c => c != null && c.IsAlive)) return;
         charges[(int)side].Enqueue(new Charge { id = card.cardId, damage = card.attack });
     }
     public int Pending(GameManager current, PlayerSide side) { Sync(current); return charges[(int)side].Count; }

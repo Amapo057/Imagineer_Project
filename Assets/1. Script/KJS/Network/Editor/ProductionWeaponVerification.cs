@@ -16,11 +16,12 @@ public static class ProductionWeaponVerification
         var game = new GameManager(false, new MatchRuleSet { fatigueOnEmptyDraw = false }); game.StartGame(PlayerSide.Me, dealCards:false);
         var weapons = new ProductionWeaponState();
         weapons.Arm(game,PlayerSide.Me,cards.GetCardById(15));
-        Check(weapons.Pending(game,PlayerSide.Me)==0,"Empty enemy board granted weapon");
+        Check(weapons.Pending(game,PlayerSide.Me)==1,"Weapon card should equip with an empty enemy board");
+        Check(!weapons.Strike(game,PlayerSide.Me,15,0,game.TurnNumber),"Empty lane consumed weapon");
         game.Board.opponent.lanes[0]=new CardInstance(cards.GetCardById(5),PlayerSide.Opponent);
         weapons.Arm(game,PlayerSide.Me,cards.GetCardById(19));
-        Check(!weapons.Strike(game,PlayerSide.Me,19,-1,game.TurnNumber),"Invalid lane accepted");
-        Check(!weapons.Strike(game,PlayerSide.Me,19,1,game.TurnNumber),"Empty lane consumed weapon");
+        Check(!weapons.Strike(game,PlayerSide.Me,15,-1,game.TurnNumber),"Invalid lane accepted");
+        Check(!weapons.Strike(game,PlayerSide.Me,15,1,game.TurnNumber),"Empty lane consumed weapon");
         Check(!weapons.Strike(game,PlayerSide.Opponent,19,0,game.TurnNumber),"Opponent turn accepted");
         game.EndTurn();game.EndTurn();
         Check(weapons.Pending(game,PlayerSide.Me)==0,"Charge survived end turn");

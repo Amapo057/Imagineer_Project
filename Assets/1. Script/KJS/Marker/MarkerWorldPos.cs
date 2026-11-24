@@ -13,35 +13,46 @@ public class MarkerWorldPos : MonoBehaviour
     // 자세히보기거리 측정을 위해 프로퍼티로 카메라 위치 선언
     public Vector3 CameraPosition{get; private set;} = Vector3.zero;
     private Quaternion cameraRotation;
+    private Pose frameCameraPose;
     // 이번 마커들 저장용 리스트
     private List<MarkerPositionResult> markerPositionResults;
 
     // 새 마커 정보 세대 번호
     // 20년 작동시 오버플로우 발생하니 주의
     public uint MarkerVersion {get; private set;} = 0;
+    public uint FrameVersion { get; private set; }
+    public IReadOnlyList<MarkerPositionResult> FrameMarkers { get; private set; } =
+        System.Array.Empty<MarkerPositionResult>();
+
+    public bool IsInLatestFrame(Vector3 point) =>
+        markerDetecter.IsInCameraFrame(point, frameCameraPose);
 
     void Update()
     {
-        if(markerDetecter.TryGetMarkerResult(out var result))
+        if(markerDetecter.TryGetMarkerFrame(out var result, out var cameraPose))
         {
+            FrameVersion++;
+            frameCameraPose = cameraPose;
+            // 검출 결과가 없는 프레임도 덱 판정에는 전달하고, 기존 추적 결과는 유지한다.
+            if (result.Count == 0)
+            {
+                FrameMarkers = System.Array.Empty<MarkerPositionResult>();
+                return;
+            }
             // 마커 세대 업데이트
             MarkerVersion++;
             // 마커들 저장용 리스트 초기화
             markerPositionResults = new List<MarkerPositionResult>(result.Count);
 
             string idsText = "";
+            CameraPosition = frameCameraPose.position;
+            cameraRotation = frameCameraPose.rotation;
 
             // 마커 결과 리스트 순회하며 월드 좌표계로 변환 후 저장
             for(int i = 0; i < result.Count; i++)
             {
                 // 인식한 id를 한줄로 정리
                 idsText += result[i].id + ", ";
-                // 첫번째 결과에서 카메라 좌표와 회전값을 가져와 저장
-                if(i == 0)
-                {
-                    CameraPosition = result[i].cameraPosition;
-                    cameraRotation = result[i].cameraRotation;
-                }
                 // 좌표계 변환 함수로 월드 좌표계로 변환
                 (var markerWorldPosition, var markerWorldRotation) = LocalToWroldPos(result[i]);
                 // 중앙 마커인 0번을 제외한 중앙 너머 마커는 무시
@@ -51,6 +62,7 @@ public class MarkerWorldPos : MonoBehaviour
                 // 변환한 좌표를 id와 함께 리스트에 저장
                 markerPositionResults.Add(new MarkerPositionResult{markerId = result[i].id, cardId = cardId, isBack = isBack, worldPosition = markerWorldPosition, worldRotation = markerWorldRotation});
             }
+            FrameMarkers = markerPositionResults;
             // ui에 아이디 출력
             if (debugText4 != null) debugText4.text = idsText;
         }

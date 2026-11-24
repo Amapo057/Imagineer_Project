@@ -11,7 +11,7 @@ public static class VRGameSession
 {
     public static bool RequireNetwork { get; set; }
     public static bool NetworkReady { get; set; }
-    public static bool NetworkPlayAllowed => !RequireNetwork || (NetworkReady && GameNetworkManager.Instance.Connected);
+    public static bool NetworkPlayAllowed => !RequireNetwork || (NetworkReady && (GameNetworkManager.Instance.Connected || GameNetworkManager.Instance.DeveloperMode));
     private static GameManager instance;
     private static KJH.Balancing.SecondPlayerCoin coin;
     private static readonly HashSet<int> usedPhysicalSpells = new HashSet<int>();
@@ -20,8 +20,11 @@ public static class VRGameSession
     private static readonly int[] confirmedDraws = new int[2];
     private static readonly int[] physicalHands = new int[2];
     private static readonly int[] deferredFatigue = new int[2];
+    private static readonly int[] trackedDeckRemaining = new int[2];
+    private static bool usesTrackedDeck;
+    internal static event System.Action<PlayerSide, int> PhysicalFatigueApplied;
 
-    private static void CreateGame(PlayerSide firstPlayer)
+    private static void CreateGame(PlayerSide firstPlayer, bool trackDeck = false)
     {
         usedPhysicalSpells.Clear();
         System.Array.Clear(pendingDraws, 0, 2);
@@ -29,12 +32,25 @@ public static class VRGameSession
         System.Array.Clear(confirmedDraws, 0, 2);
         System.Array.Clear(physicalHands, 0, 2);
         System.Array.Clear(deferredFatigue, 0, 2);
+        usesTrackedDeck = trackDeck;
+        trackedDeckRemaining[0] = trackedDeckRemaining[1] = GameRules.DeckSize;
         // The physical deck is accounted by draw requests below, not a digital deck.
         instance = new GameManager(resourceExhaustionDrawEnabled: false,
-            rules: new MatchRuleSet { fatigueOnEmptyDraw = false });
+            rules: new MatchRuleSet { fatigueOnEmptyDraw = false, coinExceedsCap = false });
         instance.OnDrawRequested += (side, count) =>
         {
             int i = (int)side;
+            if (usesTrackedDeck)
+            {
+                int handSpace = instance.Rules.maxHandSize - physicalHands[i] - pendingDraws[i];
+                int draws = Mathf.Clamp(count, 0, Mathf.Max(0, handSpace));
+                if (trackedDeckRemaining[i] > 0)
+                    pendingDraws[i] += draws;
+                else if (side == PlayerSide.Me && draws > 0)
+                    // The player who owns the deck applies its fatigue. The peer mirrors the result.
+                    ApplyFatigue(side, instance.Board.me.fatigueDamage + draws);
+                return;
+            }
             for (int n = 0; n < count; n++)
             {
                 // Pending cards already reserve hand space; confirming them grants no extra draws.
@@ -54,7 +70,19 @@ public static class VRGameSession
 
     public static int PendingPhysicalDraws(PlayerSide side) { var game = Game; return pendingDraws[(int)side]; }
     public static int ConfirmedPhysicalDraws(PlayerSide side) { var game = Game; return confirmedDraws[(int)side]; }
-    public static int RemainingPhysicalDeck(PlayerSide side) => GameRules.DeckSize - ConfirmedPhysicalDraws(side);
+    public static int RemainingPhysicalDeck(PlayerSide side)
+    {
+        var game = Game;
+        return usesTrackedDeck ? trackedDeckRemaining[(int)side] : GameRules.DeckSize - confirmedDraws[(int)side];
+    }
+
+    public static void SetPhysicalDeckRemaining(PlayerSide side, int remaining)
+    {
+        if (!usesTrackedDeck) return;
+        int i = (int)side;
+        trackedDeckRemaining[i] = Mathf.Clamp(remaining, 0, trackedDeckRemaining[i]);
+        if (trackedDeckRemaining[i] == 0) pendingDraws[i] = 0;
+    }
     public static int PhysicalHandCount(PlayerSide side) { var game = Game; return physicalHands[(int)side]; }
     public static bool ConsumePhysicalCard(PlayerSide side)
     {
@@ -76,12 +104,27 @@ public static class VRGameSession
     private static void ApplyConfirmedFatigue(PlayerSide side)
     {
         int i = (int)side;
-        if (confirmedDraws[i] < GameRules.DeckSize) return;
+        if (RemainingPhysicalDeck(side) > 0) return;
+        int count = deferredFatigue[i];
+        deferredFatigue[i] = 0;
+        ApplyFatigue(side, instance.Board.GetBoard(side).fatigueDamage + count);
+    }
+
+    public static void ApplyPhysicalDeckState(int remaining, int fatigue)
+    {
+        if (!usesTrackedDeck) return;
+        SetPhysicalDeckRemaining(PlayerSide.Opponent, remaining);
+        if (remaining == 0) ApplyFatigue(PlayerSide.Opponent, fatigue);
+    }
+
+    private static void ApplyFatigue(PlayerSide side, int fatigue)
+    {
         var board = instance.Board.GetBoard(side);
-        while (deferredFatigue[i] > 0 && !instance.IsGameOver)
+        while (board.fatigueDamage < fatigue && !instance.IsGameOver)
         {
-            deferredFatigue[i]--;
-            board.heroDamage += ++board.fatigueDamage;
+            int damage = ++board.fatigueDamage;
+            board.heroDamage += damage;
+            PhysicalFatigueApplied?.Invoke(side, damage);
             instance.CheckGameOver();
         }
     }
@@ -129,11 +172,11 @@ public static class VRGameSession
     // 등)를 네트워크가 정한 진짜 선공 쪽으로 다시 맞춤 — 안 그러면 호스트/클라이언트 양쪽이
     // "누가 선공인지"를 다르게 알고 있어서 코스트 공식(선공 1,2,3.. / 후공 2,2,3..)이 서로 어긋남.
     // 네트워크가 안 붙은 솔로 플레이에서는 이 메서드가 호출되지 않으므로 기존 동작 그대로임.
-    public static void ApplyNetworkFirstPlayer(PlayerSide firstPlayer)
+    public static void ApplyNetworkFirstPlayer(PlayerSide firstPlayer, bool trackDeck = false)
     {
         // A network start is a fresh match; retain no costs or lanes from the
         // provisional solo start or a previous round.
-        CreateGame(firstPlayer);
+        CreateGame(firstPlayer, trackDeck);
     }
 
     // 재대결(재시작) 전용 - GameManager.StartGame()은 턴/선공만 다시 정하고 라인에 놓인 카드나
@@ -141,8 +184,8 @@ public static class VRGameSession
     // 게임을 만들려면 인스턴스 자체를 새로 만들어야 함. GameHUDController.OnRematchButtonClicked
     // /OnRematchReceived에서 호출함 - 네트워크 연결 중이면 이후 ApplyNetworkFirstPlayer로 바로
     // 다시 호출되어 선공이 올바르게 재조정됨(일단 Me로 시작해두는 이유는 솔로 플레이와 동일)
-    public static void ResetGame()
+    public static void ResetGame(bool trackDeck = false)
     {
-        CreateGame(PlayerSide.Me);
+        CreateGame(PlayerSide.Me, trackDeck);
     }
 }

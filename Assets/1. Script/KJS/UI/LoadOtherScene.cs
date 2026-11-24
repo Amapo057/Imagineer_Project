@@ -5,16 +5,19 @@ public class LoadOtherScene : MonoBehaviour
 {
     public void GoToStart()
     {
+        GameNetworkManager.Instance.LeaveStartSceneRound();
         SceneManager.LoadScene("0 KJS_StartScene");
     }
     public void GoToMainGame()
     {
-        if (!GameNetworkManager.Instance.SendLoadMainGame())
+        var panel = FindFirstObjectByType<StartNetworkPanel>();
+        if (panel != null)
         {
-            FindFirstObjectByType<StartNetworkPanel>()?.ShowConnectionRequired();
+            panel.StartMainGame();
             return;
         }
-        SceneManager.LoadScene("1 MainGame");
+        if (GameNetworkManager.Instance.DeveloperMode || GameNetworkManager.Instance.SendLoadMainGame())
+            SceneManager.LoadScene("1 MainGame");
     }
     public void GoToViewMode()
     {

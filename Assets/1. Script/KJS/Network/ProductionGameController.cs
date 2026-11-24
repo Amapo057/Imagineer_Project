@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-// Production input adapter: physical cards use this same session as the existing HUD.
+// Physical-card input and match readiness for the shared game session.
 [DefaultExecutionOrder(-400)]
 public sealed class ProductionGameController : MonoBehaviour
 {
@@ -10,6 +10,8 @@ public sealed class ProductionGameController : MonoBehaviour
     public MarkerDetecter detector;
     public AnchorManager anchor;
     public ProductionSeating seating;
+    [field: SerializeField] public DeckManager Deck { get; private set; }
+    [SerializeField] private CardData developerWeaponTarget;
     public bool waitForPeerScene;
     public bool useExistingSlotVisuals;
     public static ProductionGameController Current { get; private set; }
@@ -19,37 +21,42 @@ public sealed class ProductionGameController : MonoBehaviour
     internal ProductionTableFeedback TableFeedback { get; set; }
     public bool CombatPlaying => TableFeedback != null && TableFeedback.IsPlaying;
     public bool Ready { get; private set; }
-    public bool CanAct => HardwareReady && Ready && Network.Connected && Network.PeerGameplayReady && !CombatPlaying && !Game.IsGameOver && Game.State.CurrentPlayer == PlayerSide.Me;
+    public bool CanAct => HardwareReady && Ready && (Network.DeveloperMode || (Network.Connected && Network.PeerGameplayReady)) && !CombatPlaying && !Game.IsGameOver && Game.State.CurrentPlayer == PlayerSide.Me;
     public int Starts { get; private set; }
     public string BuildLabel => Application.version;
     public string LastAction { get; private set; } = "같은 APK를 실행하고 중앙 마커 0번으로 각자의 테이블을 맞추세요.";
-    public string ReadinessHint => !Network.Connected ? "시작 화면에서 상대를 연결해 주세요." :
+    public string ReadinessHint => !Network.Connected && !Network.DeveloperMode ? "시작 화면에서 상대를 연결해 주세요." :
         detector != null && !detector.CameraReady ? "카메라를 준비하고 있습니다. 카메라 권한을 확인해 주세요." :
-        anchor != null && !anchor.IsReady ? "중앙 0번 마커를 3.5초 바라봐 테이블을 맞춰 주세요." :
+        anchor != null && !anchor.IsReady ? "중앙 0번 마커를 계속 바라봐 테이블을 맞춰 주세요." :
         seating != null && !seating.IsReady ? "테이블 한쪽에 자리 잡아 주세요. 내 필드를 맞추고 있습니다." :
         !Ready ? "상대가 플레이 준비를 마치기를 기다리고 있습니다." : "";
     readonly HashSet<int> used = new HashSet<int>();
+    private const int DeveloperTargetLane = 2;
     ProductionWeaponState weapons = new ProductionWeaponState();
     public int PendingWeapons => Ready ? weapons.Pending(Game, PlayerSide.Me) : 0;
+    public int EquippedWeaponCardId => Ready ? weapons.Source(Game, PlayerSide.Me) : -1;
+    internal int OpponentWeaponCardId => Ready ? weapons.Source(Game, PlayerSide.Opponent) : -1;
     public void ArmWeapon(PlayerSide side, CardData card) => weapons.Arm(Game, side, card);
     public bool TryStrikeWeapon(int lane)
     {
         if (!CanAct) return false;
         int source = weapons.Source(Game, PlayerSide.Me), turn = Game.TurnNumber;
         if (!weapons.CanStrike(Game, PlayerSide.Me, source, lane, turn)) return false;
-        if (!Network.SendWeaponStrike(source, lane, turn)) { LastAction = "무기 타격을 전송하지 못했습니다. 연결을 확인해 주세요."; return false; }
-        bool hit = weapons.Strike(Game, PlayerSide.Me, source, lane, turn);
-        if (hit) { LastAction = $"무기로 상대 {lane + 1}번 칸을 타격했습니다."; GetComponent<ProductionGameUI>()?.ShowFeedback(LastAction); GetComponent<ProductionTableFeedback>()?.WeaponImpact(PlayerSide.Opponent, lane); }
-        return hit;
+        if (!Network.DeveloperMode && !Network.SendWeaponStrike(source, lane, turn)) { LastAction = "무기 타격을 전송하지 못했습니다. 연결을 확인해 주세요."; return false; }
+        var target = Game.Board.opponent.lanes[lane];
+        if (!weapons.Strike(Game, PlayerSide.Me, source, lane, turn)) return false;
+        LastAction = $"무기로 상대 {lane + 1}번 칸을 타격했습니다.";
+        GetComponent<ProductionGameUI>()?.ShowFeedback(LastAction);
+        TableFeedback?.WeaponImpact(PlayerSide.Opponent, lane, target);
+        return true;
     }
     void ReceiveWeapon(int source, int lane, int turn)
     {
-        if (!Ready || !Network.Connected) return;
-        if (weapons.Strike(Game, PlayerSide.Opponent, source, lane, turn))
-        {
-            GetComponent<ProductionGameUI>()?.ShowFeedback($"상대 무기가 내 {lane + 1}번 칸을 타격했습니다!");
-            GetComponent<ProductionTableFeedback>()?.WeaponImpact(PlayerSide.Me, lane);
-        }
+        if (!Ready || !Network.Connected || !weapons.CanStrike(Game, PlayerSide.Opponent, source, lane, turn)) return;
+        var target = Game.Board.me.lanes[lane];
+        if (!weapons.Strike(Game, PlayerSide.Opponent, source, lane, turn)) return;
+        GetComponent<ProductionGameUI>()?.ShowFeedback($"상대 무기가 내 {lane + 1}번 칸을 타격했습니다!");
+        TableFeedback?.WeaponImpact(PlayerSide.Me, lane, target);
     }
     bool initialized;
     public void Initialize()
@@ -57,6 +64,7 @@ public sealed class ProductionGameController : MonoBehaviour
         if (initialized) return;
         initialized = true; Current = this;
         VRGameSession.RequireNetwork = true; VRGameSession.NetworkReady = false;
+        MultiplayerManager.GetOrCreate(Database);
         Network = GameNetworkManager.Instance;
         if (waitForPeerScene) Network.EnableGameplayReadiness();
         Network.ConfigureMatch(Database);
@@ -70,26 +78,64 @@ public sealed class ProductionGameController : MonoBehaviour
     void Awake()
     {
         Initialize();
-        if (GetComponent<AutomaticPhysicalDraw>() == null) gameObject.AddComponent<AutomaticPhysicalDraw>();
+        if (Deck == null && GetComponent<AutomaticPhysicalDraw>() == null) gameObject.AddComponent<AutomaticPhysicalDraw>();
     }
     void Start()
     {
+        if (Network.DeveloperMode)
+        {
+            VRGameSession.ApplyNetworkFirstPlayer(PlayerSide.Me, Deck != null);
+            OnStarted(PlayerSide.Me);
+        }
         if (!useExistingSlotVisuals) return;
         var feedback = GetComponent<ProductionTableFeedback>() ?? gameObject.AddComponent<ProductionTableFeedback>();
         feedback.Build(this, null);
     }
     void Update()
     {
-        if (waitForPeerScene) Network.SetGameplayReady(HardwareReady);
+        if (waitForPeerScene && !Network.DeveloperMode) Network.SetGameplayReady(HardwareReady);
     }
-    void OnStarted(PlayerSide first) { Ready = true; VRGameSession.NetworkReady = true; used.Clear(); weapons = new ProductionWeaponState(); Starts++; LastAction = "연결 완료. 실물 카드를 내 필드에 놓으세요."; }
+    void OnStarted(PlayerSide first)
+    {
+        Ready = true;
+        VRGameSession.NetworkReady = true;
+        used.Clear();
+        weapons = new ProductionWeaponState();
+        Starts++;
+        LastAction = "연결 완료. 실물 카드를 내 필드에 놓으세요.";
+        if (Network.DeveloperMode) RestoreDeveloperTarget();
+    }
+
+    private void RestoreDeveloperTarget()
+    {
+        if (developerWeaponTarget != null && !Game.IsGameOver)
+            Game.Board.opponent.lanes[DeveloperTargetLane] ??= new CardInstance(developerWeaponTarget, PlayerSide.Opponent);
+    }
+
+    internal void PassDeveloperOpponentTurn()
+    {
+        var lanes = Game.Board.opponent.lanes;
+        var target = lanes[DeveloperTargetLane];
+        bool isPracticeTarget = target != null && target.data == developerWeaponTarget;
+        // The dummy can take damage, but does not participate in the auto-pass combat.
+        if (isPracticeTarget) lanes[DeveloperTargetLane] = null;
+        Game.EndTurn();
+        if (isPracticeTarget) lanes[DeveloperTargetLane] = target;
+        RestoreDeveloperTarget();
+    }
     void OnDisconnected() { Ready = false; VRGameSession.NetworkReady = false; LastAction = "연결이 끊겼습니다. 재연결 뒤 새 판으로 시작합니다."; }
     void OnPeerReadyChanged(bool ready) { if (!ready) OnReset(); }
     void OnReset() { Ready = false; VRGameSession.NetworkReady = false; used.Clear(); weapons = new ProductionWeaponState(); }
-    public void EndTurn() { if (CanAct) hud.OnEndTurnButtonClicked(); }
-    public void UseCoin() { if (CanAct) hud.OnCoinCardUsed(); }
-    public void ConfirmDraw() { if (HardwareReady && Ready && Network.Connected && !CombatPlaying) hud.ConfirmDrawnCard(); }
-    public void Rematch() { if (!Ready || !Network.Connected || CombatPlaying) return; hud.OnRematchButtonClicked(); OnReset(); }
+    internal void PrepareToLeave()
+    {
+        enabled = false;
+        OnReset();
+        Network.LeaveStartSceneRound();
+    }
+    public void EndTurn() { if (CanAct) MultiplayerManager.Current.EndTurn(); }
+    public void UseCoin() { if (CanAct) MultiplayerManager.Current.UseCoin(); }
+    public void ConfirmDraw() { if (HardwareReady && Ready && (Network.Connected || Network.DeveloperMode) && !CombatPlaying) MultiplayerManager.Current.ConfirmDraw(); }
+    public void Rematch() { if (!Ready || (!Network.Connected && !Network.DeveloperMode) || CombatPlaying) return; MultiplayerManager.Current.Rematch(); if (Network.DeveloperMode) OnStarted(PlayerSide.Me); else OnReset(); }
     public bool TryPlacePhysicalCard(int id, int lane)
     {
         if (!CanAct) { LastAction = ReadinessHint.Length > 0 ? ReadinessHint : Game.IsGameOver ? "게임이 끝났습니다. 재대결을 선택해 주세요." : "상대 턴입니다. 내 턴에 카드를 놓아 주세요."; return false; }
@@ -97,7 +143,7 @@ public sealed class ProductionGameController : MonoBehaviour
         if (data == null || lane < 0 || lane >= GameRules.LaneCount) return false;
         if (data.cardType == CardType.Spell)
         {
-            bool cast = hud.TryUseSpell(id);
+            bool cast = MultiplayerManager.Current.TryUseSpell(id);
             LastAction = cast ? data.cardName + " 사용" : "이미 사용한 마법이거나 코스트가 부족합니다.";
             return cast;
         }
@@ -106,10 +152,12 @@ public sealed class ProductionGameController : MonoBehaviour
         if (board.lanes[lane] != null) { LastAction = (lane + 1) + "번 칸에 기물이 있습니다. 빈 칸에 놓아 주세요."; return false; }
         if (board.currentCost < data.cost) { LastAction = $"코스트가 {data.cost - board.currentCost} 부족합니다. 필요 {data.cost} / 남음 {board.currentCost}"; return false; }
         var card = new CardInstance(data, PlayerSide.Me);
-        if (!Network.SendCardPlayed(id, lane)) { LastAction = "카드 배치를 전송하지 못했습니다. 연결을 확인해 주세요."; return false; }
+        if (!Network.DeveloperMode && !Network.SendCardPlayed(id, lane)) { LastAction = "카드 배치를 전송하지 못했습니다. 연결을 확인해 주세요."; return false; }
         if (!board.TryPlaceOnLane(card, lane)) return false;
-        board.currentCost -= data.cost; used.Add(id);
+        board.currentCost -= data.cost;
+        used.Add(id);
         VRGameSession.ConsumePhysicalCard(PlayerSide.Me);
+        Deck?.RecordPlayedCard(id);
         if (data.HasKeyword(CardKeyword.Draw)) Game.DrawCards(PlayerSide.Me, 1);
         if (data.HasKeyword(CardKeyword.Heal)) Game.ApplyHealToLeftAlly(PlayerSide.Me, lane, card.currentAttack);
         if (data.HasKeyword(CardKeyword.FrontDamage)) Game.ApplyFrontDamage(PlayerSide.Me, lane, card.currentAttack);

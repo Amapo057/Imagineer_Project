@@ -29,6 +29,8 @@ public class MarkerDetecter : MonoBehaviour
     // 쓰레드에서 받을 변수
     private bool hasNewResult = false;
     private readonly object resultLock = new object();
+    private Pose resultCameraPose;
+    private System.DateTime lastFrameTimestamp;
 
     // 마커의 크기를 실측한 18.7mm로 설정
     private float markerSize = 18.7f;
@@ -157,7 +159,8 @@ public class MarkerDetecter : MonoBehaviour
     void Update()
     {
         // 자세히보기 모드 상태에 따라 검출 주기 변경
-        // detectionInterval = detailModeManager.IsDetailMode ? detailModeDetectionInterval : normalModeDetectionInterval;
+        detectionInterval = detailModeManager != null && detailModeManager.IsDetailMode
+            ? detailModeDetectionInterval : normalModeDetectionInterval;
         // 프레임 타이머
         timer += Time.deltaTime;
 
@@ -173,11 +176,13 @@ public class MarkerDetecter : MonoBehaviour
         }
 
         // 지정한 주사율로 제한, 프레임이 사용되었을경우 정보 전달
-        if (timer >= detectionInterval && needsFrame)
+        var timestamp = passthroughCameraAccess.Timestamp;
+        if (timer >= detectionInterval && needsFrame && timestamp != default && timestamp != lastFrameTimestamp)
         {
             // passthroug같은 meta sdk는 메인 스레드에서 사용
             // 카메라로부터 정보 받기
             var colors = passthroughCameraAccess.GetColors();
+            if (!colors.IsCreated || colors.Length != width * height) return;
             var cameraPose = passthroughCameraAccess.GetCameraPose();
 
             // // 컬러32 배열형태로 변형
@@ -194,15 +199,17 @@ public class MarkerDetecter : MonoBehaviour
 
                 hasNewFrame = true;
             }
+            lastFrameTimestamp = timestamp;
             timer = 0;
         }
     }
     // 변환 완료한 좌표 및 회전 반환
     // out을 사용해 조건에 따라 result의 값을 다르게 배정
-    public bool TryGetMarkerResult(out List<MarkerDetectionResult> result)
+    public bool TryGetMarkerFrame(out List<MarkerDetectionResult> result, out Pose cameraPose)
     {
         lock (resultLock)
         {
+            cameraPose = resultCameraPose;
             // 새 프레임이 없으면 false
             if (!hasNewResult)
             {
@@ -214,6 +221,15 @@ public class MarkerDetecter : MonoBehaviour
 
             return true;
         }
+    }
+
+    public bool IsInCameraFrame(Vector3 point, Pose cameraPose)
+    {
+        if (passthroughCameraAccess == null || !passthroughCameraAccess.IsPlaying ||
+            Vector3.Dot(point - cameraPose.position, cameraPose.rotation * Vector3.forward) <= 0f)
+            return false;
+        var viewport = passthroughCameraAccess.WorldToViewportPoint(point, cameraPose);
+        return viewport.x >= 0.05f && viewport.x <= 0.95f && viewport.y >= 0.05f && viewport.y <= 0.95f;
     }
 
     // opencv로 마커 탐색하는 쓰레드용 함수
@@ -255,30 +271,16 @@ public class MarkerDetecter : MonoBehaviour
             // 마커 찾는 함수로 마커 정보 받기
             var result = DetectMarker(gray);
             // 값 이상 유무 검사
-            if (result.ids != null && result.ids.Length > 0 && result.tvec != null && result.rvec != null)
+            var resultInstance = new List<MarkerDetectionResult>(result.ids.Length);
+            for (int i = 0; i < result.ids.Length; i++)
             {
-                // 마커 정보용 객체 리스트 생성해 정보 담아 메인 스레드로 넘기기
-                var resultInstance = new List<MarkerDetectionResult>(result.ids.Length);
-                for(int i = 0; i < result.ids.Length; i++)
-                {
-                    // 첫번째 값에만 카메라 정보 담기
-                    if (i == 0)
-                    {
-                        resultInstance.Add(new MarkerDetectionResult{id = result.ids[i], tvec = result.tvec[i], rvec = result.rvec[i], cameraPosition = cameraPosition, cameraRotation = cameraRotation});
-                    }
-                    // 이후 마커는 마커 정보만 삽입
-                    else
-                    {
-                        resultInstance.Add(new MarkerDetectionResult{id = result.ids[i], tvec = result.tvec[i], rvec = result.rvec[i]});
-                    }
-                }
-                // 정리한 마커 정보 반환
-                lock (resultLock)
-                {
-                    markerDetectionResult = resultInstance;
-
-                    hasNewResult = true;
-                }
+                resultInstance.Add(new MarkerDetectionResult { id = result.ids[i], tvec = result.tvec[i], rvec = result.rvec[i] });
+            }
+            lock (resultLock)
+            {
+                markerDetectionResult = resultInstance;
+                resultCameraPose = new Pose(cameraPosition, cameraRotation);
+                hasNewResult = true;
             }
         }
     }
@@ -309,6 +311,7 @@ public class MarkerDetecter : MonoBehaviour
 
         // 마커 감지
         CvAruco.DetectMarkers(gray, dictionary, out corners, out ids, detectorParameters, out rejected);
+        ids ??= System.Array.Empty<int>();
 
         // solvePnP 계산 결과 저장용 2차원 배열 생성
         double[][] tvec = new double[ids.Length][];

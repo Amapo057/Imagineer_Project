@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -14,7 +15,7 @@ using UnityEngine;
 public class GameNetworkManager : MonoBehaviour
 {
     public enum ConnectionMode { Automatic, Host, Client }
-    public const string ProtocolTag = "IMAGINEER_LAN_4";
+    public const string ProtocolTag = "IMAGINEER_LAN_5";
     const int GamePort = 7777, DiscoveryPort = 7778, ConnectTimeoutMs = 5000;
     private static GameNetworkManager instance;
     public static GameNetworkManager Instance
@@ -33,6 +34,9 @@ public class GameNetworkManager : MonoBehaviour
 
     private volatile bool isHost, connected;
     private bool waitForGameplayReady, localGameplayReady, peerGameplayReady, gameplayStarted;
+    private bool startSceneFlow;
+    private string startSceneRound;
+    private PlayerSide startSceneFirstPlayer;
     private volatile bool running = true;
     private int generation;
     private bool started;
@@ -51,6 +55,7 @@ public class GameNetworkManager : MonoBehaviour
     private Thread discoveryThread, sessionThread, receiveThread;
 
     public bool Connected => connected;
+    public bool DeveloperMode { get; private set; }
     public bool IsHost => isHost;
     public bool PeerGameplayReady => !waitForGameplayReady || peerGameplayReady;
     public string StatusText => status;
@@ -60,28 +65,78 @@ public class GameNetworkManager : MonoBehaviour
     public ConnectionMode Mode => mode;
     public event Action<PlayerSide> OnGameStartReceived;
     public event Action OnLoadMainGameReceived;
+    public event Action OnLoadStartSceneReceived;
+    public event Action<int, int> OnDeckRemainingReceived;
     public event Action OnEndTurnReceived, OnCoinUsedReceived, OnDrawConfirmedReceived, OnRematchReceived, OnDisconnected;
     public event Action<int, int> OnCardPlayedReceived, OnSpellCastReceived;
     public event Action<int, int, int> OnWeaponStrikeReceived;
+    internal event Action<int, int, Pose> OnWeaponPoseReceived;
     public event Action<bool> OnPeerGameplayReadyChanged;
 
     public void EnableGameplayReadiness() => waitForGameplayReady = true;
 
+    internal bool HasStartSceneRound => startSceneRound != null;
+
+    internal void EnableStartSceneFlow()
+    {
+        startSceneFlow = true;
+        EnableGameplayReadiness();
+    }
+
+    internal bool RequestMainGame() => HasStartSceneRound || (isHost
+        ? LaunchMainGame(PlayerSide.Me)
+        : SendRaw(NetMsg.RequestMainGame));
+
+    private bool LaunchMainGame(PlayerSide first)
+    {
+        if (HasStartSceneRound) return true;
+        var round = Guid.NewGuid().ToString("N");
+        if (!SendRaw($"{NetMsg.LoadMainGame}|{round}|{(first == PlayerSide.Me ? "PEER" : "ME")}")) return false;
+        OpenStartSceneRound(round, first);
+        return true;
+    }
+
+    private void OpenStartSceneRound(string round, PlayerSide first)
+    {
+        startSceneRound = round;
+        startSceneFirstPlayer = first;
+        OnLoadMainGameReceived?.Invoke();
+    }
+
+    internal void LeaveStartSceneRound()
+    {
+        SetGameplayReady(false);
+        startSceneRound = null;
+        localGameplayReady = false;
+        peerGameplayReady = false;
+        gameplayStarted = false;
+    }
+
+    private string WithRound(string message) => HasStartSceneRound ? $"{message}|{startSceneRound}" : message;
+
+    private bool IsCurrentRound(string round) => startSceneFlow
+        ? HasStartSceneRound && startSceneRound == round
+        : round == null;
+
     public void SetGameplayReady(bool ready)
     {
-        if (!waitForGameplayReady || localGameplayReady == ready) return;
+        if (!waitForGameplayReady || !IsCurrentRound(startSceneRound) || localGameplayReady == ready) return;
         localGameplayReady = ready;
         if (!ready) gameplayStarted = false;
-        if (connected) SendRaw($"{NetMsg.GameplayReady}|{(ready ? 1 : 0)}");
+        if (connected) SendGameplayReady();
         TryStartReadyGame();
+    }
+
+    private void SendGameplayReady()
+    {
+        if (IsCurrentRound(startSceneRound)) SendRaw(WithRound($"{NetMsg.GameplayReady}|{(localGameplayReady ? 1 : 0)}"));
     }
 
     void TryStartReadyGame()
     {
         if (!waitForGameplayReady || !connected || !isHost || !localGameplayReady ||
             !peerGameplayReady || gameplayStarted) return;
-        gameplayStarted = true;
-        ReflipForEpoch(generation);
+        gameplayStarted = BroadcastGameStart(generation);
     }
 
     void Awake()
@@ -111,7 +166,7 @@ public class GameNetworkManager : MonoBehaviour
         string next = BuildMatchSignature(database, domain);
         bool changed = signature != next;
         signature = next;
-        if (started && changed) RetryConnection();
+        if (started && changed && !DeveloperMode) RetryConnection();
     }
 
     void Start()
@@ -133,8 +188,22 @@ public class GameNetworkManager : MonoBehaviour
     }
     public void RetryConnection() => Restart(mode, manualAddress);
 
+    public void EnableDeveloperMode()
+    {
+        bool wasConnected = connected;
+        DeveloperMode = true;
+        running = false;
+        StopTransport();
+        localGameplayReady = false;
+        retryAtTicks = 0;
+        started = true;
+        SetStatus("개발자 모드 — 단독 플레이");
+        if (wasConnected) OnDisconnected?.Invoke();
+    }
+
     void Restart(ConnectionMode nextMode, IPAddress address)
     {
+        DeveloperMode = false;
         bool wasConnected = connected;
         StopTransport();
         running = true; started = true; mode = nextMode; manualAddress = address; retryAtTicks = 0;
@@ -346,23 +415,24 @@ public class GameNetworkManager : MonoBehaviour
         }
         Queue(id, () => SetStatus(host ? "연결 완료 — 호스트" : "연결 완료 — 클라이언트"));
         if (waitForGameplayReady)
-            Queue(id, () => SendRaw($"{NetMsg.GameplayReady}|{(localGameplayReady ? 1 : 0)}"));
-        else if (host) ReflipForEpoch(id);
+            Queue(id, SendGameplayReady);
+        else if (host) BroadcastGameStart(id);
         receiveThread = Background(() => ReceiveAttempt(connection, id));
     }
 
-    void ReflipFirstPlayerAndBroadcast()
-    {
-        ReflipForEpoch(generation);
-    }
-    void ReflipForEpoch(int id)
+    bool BroadcastGameStart(int id)
     {
         lock (sessionLock)
         {
-            if (!Current(id) || !connected || !isHost) return;
-            bool hostFirst = new System.Random().Next(2) == 0;
-            if (SendRaw($"{NetMsg.GameStart}|{(hostFirst ? "PEER" : "ME")}"))
-                Queue(id, () => OnGameStartReceived?.Invoke(hostFirst ? PlayerSide.Me : PlayerSide.Opponent));
+            var round = startSceneRound;
+            if (!Current(id) || !connected || !isHost || !IsCurrentRound(round)) return false;
+            bool hostFirst = round != null ? startSceneFirstPlayer == PlayerSide.Me : new System.Random().Next(2) == 0;
+            if (!SendRaw(WithRound($"{NetMsg.GameStart}|{(hostFirst ? "PEER" : "ME")}"))) return false;
+            Queue(id, () =>
+            {
+                if (IsCurrentRound(round)) OnGameStartReceived?.Invoke(hostFirst ? PlayerSide.Me : PlayerSide.Opponent);
+            });
+            return true;
         }
     }
 
@@ -395,13 +465,33 @@ public class GameNetworkManager : MonoBehaviour
         {
             case "PING": if (Current(id)) SendRaw("PONG"); break;
             case "PONG": break;
-            case NetMsg.LoadMainGame: Queue(id, () => OnLoadMainGameReceived?.Invoke()); break;
+            case NetMsg.RequestMainGame:
+                Queue(id, () => { if (startSceneFlow && isHost) LaunchMainGame(PlayerSide.Opponent); });
+                break;
+            case NetMsg.LoadMainGame:
+                if (parts.Length == 1)
+                    Queue(id, () => { if (!startSceneFlow) OnLoadMainGameReceived?.Invoke(); });
+                else if (parts.Length == 3 && Guid.TryParseExact(parts[1], "N", out _) && (parts[2] == "ME" || parts[2] == "PEER"))
+                    Queue(id, () =>
+                    {
+                        if (startSceneFlow && !isHost && !HasStartSceneRound)
+                            OpenStartSceneRound(parts[1], parts[2] == "ME" ? PlayerSide.Me : PlayerSide.Opponent);
+                    });
+                break;
+            case NetMsg.LoadStartScene:
+                if (parts.Length <= 2)
+                    Queue(id, () =>
+                    {
+                        if (IsCurrentRound(parts.Length == 2 ? parts[1] : null)) OnLoadStartSceneReceived?.Invoke();
+                    });
+                break;
             case NetMsg.GameplayReady:
-                if (waitForGameplayReady && parts.Length == 2 && (parts[1] == "0" || parts[1] == "1"))
+                if (waitForGameplayReady && (parts.Length == 2 || parts.Length == 3) && (parts[1] == "0" || parts[1] == "1"))
                 {
                     bool ready = parts[1] == "1";
                     Queue(id, () =>
                     {
+                        if (!IsCurrentRound(parts.Length == 3 ? parts[2] : null)) return;
                         peerGameplayReady = ready;
                         if (!ready) gameplayStarted = false;
                         OnPeerGameplayReadyChanged?.Invoke(ready);
@@ -410,8 +500,12 @@ public class GameNetworkManager : MonoBehaviour
                 }
                 break;
             case NetMsg.GameStart:
-                if (parts.Length == 2 && (parts[1] == "ME" || parts[1] == "PEER"))
-                    Queue(id, () => OnGameStartReceived?.Invoke(parts[1] == "ME" ? PlayerSide.Me : PlayerSide.Opponent));
+                if ((parts.Length == 2 || parts.Length == 3) && (parts[1] == "ME" || parts[1] == "PEER"))
+                    Queue(id, () =>
+                    {
+                        if (IsCurrentRound(parts.Length == 3 ? parts[2] : null))
+                            OnGameStartReceived?.Invoke(parts[1] == "ME" ? PlayerSide.Me : PlayerSide.Opponent);
+                    });
                 break;
             case NetMsg.WeaponStrike:
                 if (parts.Length == 4 && int.TryParse(parts[1], out int source) && source > 0 &&
@@ -419,9 +513,19 @@ public class GameNetworkManager : MonoBehaviour
                     int.TryParse(parts[3], out int weaponTurn) && weaponTurn > 0)
                     Queue(id, () => OnWeaponStrikeReceived?.Invoke(source, weaponLane, weaponTurn));
                 break;
+            case NetMsg.WeaponPose:
+                if (TryReadWeaponPose(parts, out int poseTurn, out int poseCard, out Pose pose))
+                    Queue(id, () => OnWeaponPoseReceived?.Invoke(poseTurn, poseCard, pose));
+                break;
             case NetMsg.EndTurn: Queue(id, () => OnEndTurnReceived?.Invoke()); break;
             case NetMsg.CoinUsed: Queue(id, () => OnCoinUsedReceived?.Invoke()); break;
             case NetMsg.DrawConfirmed: Queue(id, () => OnDrawConfirmedReceived?.Invoke()); break;
+            case NetMsg.DeckRemaining:
+                if (parts.Length == 3 && int.TryParse(parts[1], out int count) &&
+                    int.TryParse(parts[2], out int fatigue) && count >= 0 && count <= GameRules.DeckSize &&
+                    fatigue >= 0 && fatigue <= GameRules.StartingHeroHealth)
+                    Queue(id, () => OnDeckRemainingReceived?.Invoke(count, fatigue));
+                break;
             case NetMsg.SpellCast:
                 if (parts.Length == 3 && int.TryParse(parts[1], out int spell) && int.TryParse(parts[2], out int target) && target >= -1 && target < 4)
                     Queue(id, () => OnSpellCastReceived?.Invoke(spell, target));
@@ -431,11 +535,41 @@ public class GameNetworkManager : MonoBehaviour
                     Queue(id, () => OnCardPlayedReceived?.Invoke(card, lane));
                 break;
             case NetMsg.Rematch:
-                Queue(id, () => OnRematchReceived?.Invoke());
-                if (isHost) ReflipForEpoch(id);
+                if (parts.Length <= 2)
+                    Queue(id, () =>
+                    {
+                        if (!IsCurrentRound(parts.Length == 2 ? parts[1] : null)) return;
+                        OnRematchReceived?.Invoke();
+                        if (isHost) BroadcastGameStart(id);
+                    });
                 break;
         }
     }
+
+    private static bool TryReadWeaponPose(string[] parts, out int turn, out int cardId, out Pose pose)
+    {
+        turn = cardId = 0;
+        pose = default;
+        if (parts.Length < 3 || !int.TryParse(parts[1], out turn) || turn <= 0 ||
+            !int.TryParse(parts[2], out cardId) || cardId < 0) return false;
+        if (cardId == 0) return parts.Length == 3;
+
+        var position = Vector3.zero;
+        var rotation = Quaternion.identity;
+        if (parts.Length != 10 ||
+            !ReadComponent(parts[3], out position.x) || !ReadComponent(parts[4], out position.y) ||
+            !ReadComponent(parts[5], out position.z) || !ReadComponent(parts[6], out rotation.x) ||
+            !ReadComponent(parts[7], out rotation.y) || !ReadComponent(parts[8], out rotation.z) ||
+            !ReadComponent(parts[9], out rotation.w)) return false;
+        float lengthSquared = Quaternion.Dot(rotation, rotation);
+        if (lengthSquared < 0.9f || lengthSquared > 1.1f) return false;
+        pose = new Pose(position, rotation.normalized);
+        return true;
+    }
+
+    private static bool ReadComponent(string text, out float value) =>
+        float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value) &&
+        !float.IsNaN(value) && !float.IsInfinity(value);
 
     bool SendRaw(string message)
     {
@@ -450,12 +584,22 @@ public class GameNetworkManager : MonoBehaviour
 
     public bool TrySendEndTurn(PlayerSide localSide, PlayerSide currentTurn) => localSide == currentTurn && SendRaw(NetMsg.EndTurn);
     public bool SendLoadMainGame() => SendRaw(NetMsg.LoadMainGame);
+    public bool SendLoadStartScene() => SendRaw(WithRound(NetMsg.LoadStartScene));
     public bool SendCardPlayed(int cardId, int lane) => SendRaw($"{NetMsg.CardPlayed}|{cardId}|{lane}");
     public bool SendWeaponStrike(int source, int lane, int turn) => SendRaw($"{NetMsg.WeaponStrike}|{source}|{lane}|{turn}");
+    internal bool SendWeaponPose(int turn, int cardId, Pose pose)
+    {
+        if (cardId == 0) return SendRaw($"{NetMsg.WeaponPose}|{turn}|0");
+        var p = pose.position;
+        var r = pose.rotation;
+        return SendRaw(FormattableString.Invariant(
+            $"{NetMsg.WeaponPose}|{turn}|{cardId}|{p.x:F4}|{p.y:F4}|{p.z:F4}|{r.x:F4}|{r.y:F4}|{r.z:F4}|{r.w:F4}"));
+    }
     public void SendCoinUsed() => SendRaw(NetMsg.CoinUsed);
     public void SendSpellCast(int cardId, int lane) => SendRaw($"{NetMsg.SpellCast}|{cardId}|{lane}");
     public void SendDrawConfirmed() => SendRaw(NetMsg.DrawConfirmed);
-    public void SendRematch() { if (SendRaw(NetMsg.Rematch) && isHost) ReflipFirstPlayerAndBroadcast(); }
+    public bool SendDeckRemaining(int count, int fatigue) => SendRaw($"{NetMsg.DeckRemaining}|{count}|{fatigue}");
+    public void SendRematch() { if (SendRaw(WithRound(NetMsg.Rematch)) && isHost) BroadcastGameStart(generation); }
 
     static IEnumerable<UnicastIPAddressInformation> GetIPv4Interfaces()
     {
