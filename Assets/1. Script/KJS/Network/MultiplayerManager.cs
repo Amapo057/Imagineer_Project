@@ -147,12 +147,15 @@ public sealed class MultiplayerManager : MonoBehaviour
         return true;
     }
 
-    public void ConfirmDraw()
+    public void ConfirmDraw() => TryConfirmDraw();
+
+    public bool TryConfirmDraw()
     {
         var flow = ProductionGameController.Current;
-        if (VRGameSession.RequireNetwork && flow != null && !flow.HardwareReady) return;
-        if (flow?.CombatPlaying == true || !VRGameSession.NetworkPlayAllowed || !VRGameSession.ConfirmPhysicalDraw(PlayerSide.Me)) return;
+        if (VRGameSession.RequireNetwork && flow != null && !flow.HardwareReady) return false;
+        if (flow?.CombatPlaying == true || !VRGameSession.NetworkPlayAllowed || !VRGameSession.ConfirmPhysicalDraw(PlayerSide.Me)) return false;
         if (network.Connected) network.SendDrawConfirmed();
+        return true;
     }
 
     public void Rematch()

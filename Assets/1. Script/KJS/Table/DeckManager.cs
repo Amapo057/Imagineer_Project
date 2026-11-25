@@ -12,6 +12,7 @@ public sealed class DeckManager : MonoBehaviour
     // 한 플레이어의 덱에는 같은 카드가 한 장만 있다. 앞뒷면은 동일한 cardId를 사용한다.
     private readonly HashSet<int> registeredCards = new();
     private readonly HashSet<int> drawnCards = new();
+    private readonly HashSet<int> pendingCards = new();
     private GameManager match;
     private uint frameVersion;
 
@@ -27,6 +28,7 @@ public sealed class DeckManager : MonoBehaviour
         if (flow == null || !flow.Ready || !flow.HardwareReady || flow.Game.IsGameOver ||
             !VRGameSession.NetworkPlayAllowed || deckSlot == null || marker == null) return;
         BindMatch(flow.Game);
+        ConfirmPendingCards();
         if (frameVersion == marker.FrameVersion) return;
         frameVersion = marker.FrameVersion;
 
@@ -60,10 +62,28 @@ public sealed class DeckManager : MonoBehaviour
     void RecordDrawnCard(int cardId, bool confirmHand)
     {
         registeredCards.Add(cardId);
+        if (drawnCards.Contains(cardId)) return;
+        if (confirmHand)
+        {
+            pendingCards.Add(cardId);
+            ConfirmPendingCards();
+            return;
+        }
+        pendingCards.Remove(cardId);
         if (!drawnCards.Add(cardId)) return;
-        if (confirmHand) MultiplayerManager.Current?.ConfirmDraw();
         // A missing marker may mean the deck moved or is covered. Count only identified cards.
         VRGameSession.SetPhysicalDeckRemaining(PlayerSide.Me, GameRules.DeckSize - drawnCards.Count);
+    }
+
+    void ConfirmPendingCards()
+    {
+        while (pendingCards.Count > 0)
+        {
+            if (MultiplayerManager.Current == null || !MultiplayerManager.Current.TryConfirmDraw()) return;
+            int cardId = 0;
+            foreach (int pending in pendingCards) { cardId = pending; break; }
+            RecordDrawnCard(cardId, confirmHand: false);
+        }
     }
 
     void BindMatch(GameManager game)
@@ -72,6 +92,7 @@ public sealed class DeckManager : MonoBehaviour
         match = game;
         registeredCards.Clear();
         drawnCards.Clear();
+        pendingCards.Clear();
         frameVersion = marker != null ? marker.FrameVersion : 0;
     }
 

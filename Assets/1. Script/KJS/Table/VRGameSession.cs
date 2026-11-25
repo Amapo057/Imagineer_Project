@@ -44,11 +44,11 @@ public static class VRGameSession
             {
                 int handSpace = instance.Rules.maxHandSize - physicalHands[i] - pendingDraws[i];
                 int draws = Mathf.Clamp(count, 0, Mathf.Max(0, handSpace));
-                if (trackedDeckRemaining[i] > 0)
-                    pendingDraws[i] += draws;
-                else if (side == PlayerSide.Me && draws > 0)
-                    // The player who owns the deck applies its fatigue. The peer mirrors the result.
-                    ApplyFatigue(side, instance.Board.me.fatigueDamage + draws);
+                int available = Mathf.Max(0, trackedDeckRemaining[i] - pendingDraws[i]);
+                int realDraws = Mathf.Clamp(draws, 0, available);
+                pendingDraws[i] += realDraws;
+                deferredFatigue[i] += draws - realDraws;
+                ApplyConfirmedFatigue(side);
                 return;
             }
             for (int n = 0; n < count; n++)
@@ -81,7 +81,7 @@ public static class VRGameSession
         if (!usesTrackedDeck) return;
         int i = (int)side;
         trackedDeckRemaining[i] = Mathf.Clamp(remaining, 0, trackedDeckRemaining[i]);
-        if (trackedDeckRemaining[i] == 0) pendingDraws[i] = 0;
+        ApplyConfirmedFatigue(side);
     }
     public static int PhysicalHandCount(PlayerSide side) { var game = Game; return physicalHands[(int)side]; }
     public static bool ConsumePhysicalCard(PlayerSide side)
@@ -105,6 +105,9 @@ public static class VRGameSession
     {
         int i = (int)side;
         if (RemainingPhysicalDeck(side) > 0) return;
+        // The deck owner applies fatigue after its last real draw is confirmed.
+        // The peer mirrors that result through ApplyPhysicalDeckState.
+        if (usesTrackedDeck && (side != PlayerSide.Me || pendingDraws[i] > 0)) return;
         int count = deferredFatigue[i];
         deferredFatigue[i] = 0;
         ApplyFatigue(side, instance.Board.GetBoard(side).fatigueDamage + count);
